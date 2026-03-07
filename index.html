@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mgcryan v0.0.0.1</title>
+    <link rel="icon" type="image/png" href="Logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --blue: #0073e6; --dark: #050a14; --red: #ff2a55; --green: #00e676; --grey: #444; --gold: #f4d03f; --glass: rgba(10, 15, 25, 0.95); }
+        body { background: var(--dark); font-family: 'Inter', sans-serif; color: #e0e0e0; margin: 0; overflow: hidden; height: 100vh; display: flex; align-items: center; justify-content: center; }
+        
+        #matrix-bg { position: fixed; inset: 0; z-index: 1; opacity: 0.15; pointer-events: none; }
+        
+        .glass-panel { background: var(--glass); border: 1px solid rgba(0,115,230,0.3); backdrop-filter: blur(15px); padding: 30px; width: 90%; max-width: 340px; z-index: 10; border-radius: 8px; box-shadow: 0 0 40px rgba(0,0,0,0.8); }
+        .logo { width: 80px; height: 80px; margin: 0 auto 20px; display: block; border-radius: 50%; box-shadow: 0 0 15px rgba(0,115,230,0.3); }
+        h2 { text-align: center; font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 20px; letter-spacing: 1px; }
+        
+        #inline-maint-warning { display: none; color: var(--red); font-size: 9px; font-weight: bold; margin-top: 4px; position: absolute; text-transform: uppercase; letter-spacing: 0.5px; animation: pulseRed 1.5s infinite; }
+        @keyframes pulseRed { 0% { opacity: 0.5; } 50% { opacity: 1; text-shadow: 0 0 8px var(--red); } 100% { opacity: 0.5; } }
+
+        .pass-wrapper { position: relative; width: 100%; margin-bottom: 15px; }
+        .input-group { margin-bottom: 15px; width: 100%; position: relative; }
+        input[type="text"], input[type="password"], select { width: 100%; padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: #fff; font-family: 'JetBrains Mono', monospace; box-sizing: border-box; outline: none; border-radius: 4px; transition: 0.2s; margin-bottom:0; font-size: 11px;}
+        input:focus, select:focus { border-color: var(--blue); background: rgba(0,115,230,0.05); box-shadow: 0 0 10px rgba(0,115,230,0.2); }
+        
+        /* 👁️ CYBER OPTIC SENSOR */
+        .cyber-eye { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #444; font-weight: bold; cursor: pointer; transition: 0.3s all; user-select: none; }
+        .eye-closed::before { content: "[ - ]"; }
+        .eye-open::before { content: "[ O ]"; color: var(--blue); text-shadow: 0 0 10px var(--blue); }
+        
+        button { width: 100%; padding: 12px; background: var(--blue); color: white; border: none; border-radius: 4px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; transition: 0.2s; margin-bottom: 5px;}
+        button:hover:not(:disabled) { background: #005bb5; box-shadow: 0 0 15px rgba(0,115,230,0.4); }
+        button:disabled { opacity: 0.6; cursor: wait; }
+        
+        .status-msg { font-size: 11px; text-align: center; margin-top: 10px; min-height: 14px; color: var(--blue); font-weight: 600; font-family: 'JetBrains Mono';}
+        .error-msg { color: var(--red); }
+
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; align-items: center; justify-content: center; padding: 15px; box-sizing: border-box;}
+        .modal-content { background: var(--glass); border: 1px solid rgba(0,115,230,0.2); padding: 25px; width: 100%; max-width: 1050px; max-height: 90vh; display: flex; flex-direction: column; border-radius: 8px; box-shadow: 0 0 50px rgba(0,0,0,0.9); overflow-y: auto;}
+        
+        .nav-back { color: #aaa; font-size: 12px; cursor: pointer; margin-bottom: 15px; display: inline-block; }
+        .nav-back:hover { color: #fff; text-decoration: underline; }
+        
+        .f-link { display: block; color: var(--blue); text-decoration: none; padding: 12px; margin: 8px 0; border-left: 2px solid var(--blue); background: rgba(0,115,230,0.05); font-size: 11px; text-align: left; transition: 0.2s; font-family: 'JetBrains Mono';}
+        .f-link:hover { background: rgba(0,115,230,0.15); padding-left: 18px; text-shadow: 0 0 8px var(--blue); }
+
+        .tab-bar { display: flex; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 15px; flex-wrap: wrap; }
+        .db-tab { padding: 10px 20px; font-size: 11px; color: #888; cursor: pointer; border-bottom: 2px solid transparent; font-weight: bold; text-transform: uppercase; }
+        .db-tab:hover { color: #fff; }
+        .tab-active { color: var(--blue); border-bottom-color: var(--blue); }
+        .tab-content { display: none; flex-direction: column; flex-grow: 1; overflow: hidden; }
+        .content-active { display: flex; }
+
+        .db-action-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;}
+        .db-action-bar > div { display: flex; gap: 10px; align-items: center; flex-wrap: wrap;}
+        
+        .btn-small { width: auto; padding: 8px 12px; font-size: 10px; background: transparent; border: 1px solid #aaa; color: #aaa; border-radius: 4px; margin:0; transition: 0.2s;}
+        .btn-small:hover { background: #333; color: #fff; border-color: #fff; }
+        .btn-red { border-color: var(--red); color: var(--red); }
+        .btn-red:hover { background: var(--red); color: white; border-color: var(--red); box-shadow: 0 0 10px rgba(255,42,85,0.5); }
+        .btn-gold { border-color: var(--gold); color: var(--gold); }
+        .btn-gold:hover { background: var(--gold); color: black; border-color: var(--gold); }
+        
+        .btn-maint-off { background: transparent; border: 1px solid var(--grey); color: #888; }
+        .btn-maint-on { background: rgba(255,42,85,0.1); border: 1px solid var(--red); color: var(--red); box-shadow: 0 0 15px rgba(255,42,85,0.2); }
+
+        .table-container { flex-grow: 1; overflow-x: auto; overflow-y: auto; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05); border-radius: 4px; }
+        .data-table { width: 100%; min-width: 650px; border-collapse: collapse; font-size: 11px; text-align: left; table-layout: fixed; font-family: 'JetBrains Mono'; }
+        .data-table th { background: rgba(5,10,20,0.95); padding: 12px 10px; color: #888; position: sticky; top: 0; z-index: 2; font-weight: normal; font-size: 10px; text-transform: uppercase;}
+        .data-table td { padding: 12px 10px; border-bottom: 1px solid rgba(255,255,255,0.02); color: #ccc; vertical-align: middle; }
+
+        .badge-id { color: #555; font-size: 10px; margin-right: 8px;}
+        .status-dot { height: 7px; width: 7px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+        .dot-online { background: var(--green); box-shadow: 0 0 8px var(--green); }
+        .dot-offline { background: #333; }
+        .dot-hidden { background: var(--red); box-shadow: 0 0 8px var(--red); }
+
+        input[type="checkbox"] { width: 14px; height: 14px; cursor: pointer; accent-color: var(--blue); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 3px; }
+
+        #massive-maint-block, #massive-setup-block { display: none; text-align: center; z-index: 50; }
+        .maint-icon { font-size: 50px; margin-bottom: 10px; text-shadow: 0 0 30px var(--red); }
+        .maint-title { color: var(--red); font-size: 24px; font-weight: 800; text-transform: uppercase; margin: 0 0 10px 0; letter-spacing: 3px; }
+
+        @media (max-width: 768px) {
+            .glass-panel, .modal-content { padding: 15px; }
+            .db-action-bar { flex-direction: column; align-items: stretch; }
+            .db-action-bar > div { justify-content: center; }
+            .nav-back { font-size: 10px; }
+            .btn-small { padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="matrix-bg"></canvas>
+
+    <div class="glass-panel" id="ui-frame">
+        <div id="login-container">
+            <img src="Logo.png" class="logo" alt="Logo">
+            <h2 id="greet">Welcome to mgcryan v0.0.0.1</h2>
+            
+            <div id="auth-zone">
+                <div class="input-group">
+                    <input type="text" id="user" placeholder="Username" class="enter-tab" data-next="pass" onkeyup="checkMaintenancePreflight()">
+                    <div id="inline-maint-warning">SYSTEM UNDER MAINTENANCE</div>
+                </div>
+                <div class="pass-wrapper">
+                    <input type="password" id="pass" placeholder="Password" class="enter-tab" data-next="login-btn">
+                    <span class="cyber-eye eye-closed" onclick="togglePass('pass', this)"></span>
+                </div>
+                <button id="login-btn" onclick="login()">Login</button>
+                <div id="login-status" class="status-msg"></div>
+            </div>
+
+            <div id="vault-zone" style="display:none; text-align:center;">
+                <div id="dynamic-links-container" style="margin-bottom: 20px;"></div>
+                <button id="db-btn" onclick="openDBAuth()" style="display:none; background: transparent; border: 1px solid var(--blue); color: var(--blue);">User Management</button>
+                <button onclick="logout()" style="margin-top:10px; background: transparent; border: 1px solid var(--red); color: var(--red);">Logout</button>
+            </div>
+        </div>
+
+        <div id="massive-maint-block">
+            <div class="maint-icon">⚠️</div>
+            <h2 class="maint-title">SYSTEM UNDER<br>MAINTENANCE</h2>
+            <p style="color: #aaa; font-size: 11px; margin-bottom: 25px; font-family: 'JetBrains Mono';">The server is currently locked for upgrades.<br>Please try again later.</p>
+            <button onclick="location.reload()" style="background: transparent; border: 1px solid var(--grey); color: #888;">Refresh Page</button>
+        </div>
+
+        <div id="massive-setup-block">
+            <h2 style="color:var(--gold); letter-spacing:2px;">SYSTEM INITIALIZATION</h2>
+            <p style="color: #aaa; font-size: 10px; margin-bottom: 15px;">Database is empty. Create Root Developer Account.</p>
+            
+            <input type="text" id="setup-u" placeholder="Developer Username" class="enter-tab" data-next="setup-n">
+            <input type="text" id="setup-n" placeholder="Full Name" class="enter-tab" data-next="setup-p" style="margin-top:15px;">
+            <div class="pass-wrapper" style="margin-top:15px;">
+                <input type="password" id="setup-p" placeholder="Account Password" class="enter-tab" data-next="setup-a">
+                <span class="cyber-eye eye-closed" onclick="togglePass('setup-p', this)"></span>
+            </div>
+            <div class="pass-wrapper">
+                <input type="password" id="setup-a" placeholder="Database Auth Code" class="enter-tab" data-next="setup-s">
+                <span class="cyber-eye eye-closed" onclick="togglePass('setup-a', this)"></span>
+            </div>
+            <div class="pass-wrapper">
+                <input type="password" id="setup-s" placeholder="Master Security Key" class="enter-tab" data-next="setup-btn">
+                <span class="cyber-eye eye-closed" onclick="togglePass('setup-s', this)"></span>
+            </div>
+            <button id="setup-btn" onclick="setupGenesis()" style="background:var(--gold); color:black;">Initialize Database</button>
+        </div>
+    </div>
+
+    <div class="modal" id="db-auth-modal">
+        <div class="glass-panel" style="width: 320px; text-align: center;">
+            <h4 id="db-auth-title" style="margin-top:0; color: #fff;">Authorization Required</h4>
+            <div class="pass-wrapper">
+                <input type="password" id="db-auth-input" placeholder="Auth Code" class="enter-tab" data-next="decrypt-btn">
+                <span class="cyber-eye eye-closed" onclick="togglePass('db-auth-input', this)"></span>
+            </div>
+            <button id="decrypt-btn" onclick="verifyDBAuth()">Verify</button>
+            <button onclick="closeModals()" style="background:transparent; color: #aaa; margin-top:5px;">Cancel</button>
+            <div id="decrypt-status" class="status-msg"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="db-modal">
+        <div class="modal-content">
+            <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 10px; flex-wrap: wrap; gap:10px;">
+                <span class="nav-back" onclick="closeDB()" style="margin:0;">← Close Dashboard</span>
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <button onclick="refreshDB()" class="btn-small" style="color:var(--blue); border-color:var(--blue); margin-right:15px;">🔄 Refresh Data</button>
+                    <button id="maint-btn" onclick="toggleMaintenance()" style="display:none; width:130px; font-size:10px;" class="btn-maint-off">Maintenance: OFF</button>
+                    <button id="logs-btn" onclick="openLogsModal()" style="display:none; width:100px; font-size:10px; background: rgba(0,115,230,0.1); border: 1px solid var(--blue); color: var(--blue);">System Logs</button>
+                </div>
+            </div>
+
+            <div class="tab-bar" id="admin-tabs">
+                <div class="db-tab tab-active" onclick="switchTab('users')">Users</div>
+                <div class="db-tab" id="page-tab-btn" style="display:none;" onclick="switchTab('pages')">Pages</div>
+                <div class="db-tab" id="sec-tab-btn" style="display:none;" onclick="switchTab('security')">Security Keys</div>
+            </div>
+            
+            <div id="tab-users" class="tab-content content-active">
+                <div class="db-action-bar">
+                    <span id="active-count" style="color:var(--green); font-size:11px; font-family:'JetBrains Mono';">Active Users: 0</span>
+                    <div>
+                        <input type="password" id="bulk-sec-key" placeholder="Security Key" style="width: 100px; padding: 8px; font-size: 10px; margin: 0; display:none;">
+                        <button onclick="bulkDelete()" id="btn-bulk-del" class="btn-small btn-red" style="border: 1px solid var(--red);">Delete Selected</button>
+                        <button onclick="bulkLogout()" id="btn-bulk-out" class="btn-small btn-gold">Logout Selected</button>
+                        <button onclick="showEditUser(null, 'Admin')" id="btn-add-admin" style="width:90px; font-size:10px; margin:0; background: transparent; color:var(--blue); border: 1px solid var(--blue); display:none;">+ Add Admin</button>
+                        <button onclick="showEditUser(null)" style="width:90px; font-size:10px; margin:0; background: var(--blue); color:white; border:none;">+ Add User</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 5%;"><input type="checkbox" id="selectAll" onclick="toggleAllUsers(this)"></th>
+                                <th style="width: 15%;">ID</th>
+                                <th style="width: 25%;">Username</th>
+                                <th style="width: 15%;">Role</th>
+                                <th style="width: 15%;">Status</th>
+                                <th style="width: 15%;">Session</th>
+                                <th style="width: 10%; text-align: right;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="user-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="tab-pages" class="tab-content">
+                <div class="db-action-bar">
+                    <span style="color:#aaa; font-size:10px;">Assign and hide dynamic URLs.</span>
+                    <button onclick="showEditPage(null)" style="width:120px; font-size:10px; margin:0; background: var(--blue); color:white; border:none;">+ Add Page</button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 15%;">ID</th>
+                                <th style="width: 25%;">Display Name</th>
+                                <th style="width: 25%;">Target URL</th>
+                                <th style="width: 15%;">Access Control</th>
+                                <th style="width: 10%;">Visibility</th>
+                                <th style="width: 10%; text-align: right;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="page-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="tab-security" class="tab-content">
+                <div class="db-action-bar">
+                    <span style="color:#aaa; font-size:10px;">Manage Encrypted Master Security Keys.</span>
+                    <button onclick="addSecurityKey()" style="width:120px; font-size:10px; margin:0; background: var(--blue); color:white; border:none;">+ Create Key</button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 20%;">Key #</th>
+                                <th style="width: 50%;">Hash Signature</th>
+                                <th style="width: 30%; text-align: right;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sec-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="logs-modal">
+        <div class="modal-content" style="max-width: 1000px;">
+            <span class="nav-back" onclick="backToDBFromLogs()">← Back to Database</span>
+            <h3 style="margin:0 0 15px 0; color:#fff;">System Logs</h3>
+            <input type="text" id="log-filter" class="log-search" placeholder="Search logs..." onkeyup="renderLogs()">
+            
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 100px;">Date</th>
+                            <th style="width: 90px;">Time</th>
+                            <th style="width: 90px;">ID</th>
+                            <th style="width: 120px;">Operator</th>
+                            <th style="width: 120px;">Target</th>
+                            <th>Action Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="audit-logs"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="edit-modal">
+        <div class="modal-content" style="max-width: 400px; padding: 25px; box-sizing: border-box;">
+            <span class="nav-back" onclick="backToDB()">← Cancel</span>
+            <h3 id="edit-title" style="color:#fff; margin-bottom:15px;">User Profile</h3>
+            
+            <div style="display:flex; justify-content: space-between; align-items:center;">
+                <label style="font-size:10px; color:#aaa;">Username</label>
+                <span id="user-availability" style="font-size:10px; font-weight:bold;"></span>
+            </div>
+            <div class="input-group">
+                <input type="text" id="edit-u" class="enter-tab" data-next="edit-p" onkeyup="checkUsername()">
+            </div>
+            
+            <label style="font-size:10px; color:#aaa;">Password <span style="font-size:8px; color:var(--green);">(Encrypted)</span></label>
+            <div class="pass-wrapper">
+                <input type="password" id="edit-p" class="enter-tab" data-next="edit-r" placeholder="Leave blank to keep current">
+                <span class="cyber-eye eye-closed" onclick="togglePass('edit-p', this)"></span>
+            </div>
+            
+            <label style="font-size:10px; color:#aaa;">Role</label>
+            <div class="input-group">
+                <input type="text" id="edit-r" class="enter-tab" data-next="edit-n">
+            </div>
+            
+            <label style="font-size:10px; color:#aaa;">Full Name</label>
+            <div class="input-group">
+                <input type="text" id="edit-n" class="enter-tab" data-next="edit-a">
+            </div>
+            
+            <div id="auth-col-box">
+                <label style="font-size:10px; color:#aaa;">Auth Code <span style="font-size:8px; color:var(--green);">(Encrypted)</span></label>
+                <div class="pass-wrapper">
+                    <input type="password" id="edit-a" class="enter-tab" data-next="commit-btn" placeholder="Leave blank to keep current">
+                    <span class="cyber-eye eye-closed" onclick="togglePass('edit-a', this)"></span>
+                </div>
+            </div>
+            
+            <button id="commit-btn" onclick="saveUser()" style="margin-top:15px;">Save Changes</button>
+            
+            <div id="delete-zone" style="display:none; border-top: 1px solid rgba(255,0,85,0.3); padding-top:15px; margin-top:15px;">
+                <label style="font-size:10px; color:var(--red);">Master Security Key</label>
+                <div class="pass-wrapper">
+                    <input type="password" id="sec-key" class="enter-tab" data-next="del-btn">
+                    <span class="cyber-eye eye-closed" onclick="togglePass('sec-key', this)"></span>
+                </div>
+                <button id="del-btn" onclick="deleteUser()" style="background:transparent; color:var(--red); border: 1px solid var(--red);">Delete User</button>
+            </div>
+            <div id="edit-status" class="status-msg"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="page-modal">
+        <div class="modal-content" style="max-width: 400px; height: auto;">
+            <span class="nav-back" onclick="backToDB()">← Cancel</span>
+            <h3 id="page-title" style="color:#fff; margin-bottom:15px;">Page Configuration</h3>
+            
+            <label style="font-size:10px; color:#aaa;">Display Name</label>
+            <div class="input-group"><input type="text" id="page-t" class="enter-tab" data-next="page-u"></div>
+            
+            <label style="font-size:10px; color:#aaa;">Target URL</label>
+            <div class="input-group"><input type="text" id="page-u" class="enter-tab" data-next="page-a"></div>
+            
+            <label style="font-size:10px; color:#aaa;">Allowed Access</label>
+            <div class="input-group"><input type="text" id="page-a" class="enter-tab" data-next="page-s" value="ALL"></div>
+
+            <label style="font-size:10px; color:#aaa;">Visibility Status</label>
+            <div class="input-group">
+                <select id="page-s" class="enter-tab" data-next="commit-page-btn">
+                    <option value="Visible" style="background:#050a14;">Visible</option>
+                    <option value="Hidden" style="background:#050a14; color:var(--red);">Hidden</option>
+                </select>
+            </div>
+            
+            <button id="commit-page-btn" onclick="savePage()" style="margin-top:15px;">Save Page</button>
+            <div id="page-status" class="status-msg"></div>
+        </div>
+    </div>
+
+<script>
+    const API = "https://script.google.com/macros/s/AKfycbxoOOIWzL5m1eVb4rpje941JCVbhbrTOTkguhIC6c9zQGiSGWADUKspz8jzJJ62FWpTVQ/exec"; 
+    const postConfig = (payload) => ({ method: 'POST', headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+
+    let liveRadarTimer = null; 
+    let phantomKillerTimer = null; 
+    let masterData = null;
+    let sysData = { maintenance: false, devs: [], isSetup: false };
+    
+    let loginFailAttempts = 0;
+    let loginLockoutTimer = null;
+    let loadingInterval = null;
+
+    // CUSTOM LOCAL STORAGE ENCRYPTION
+    const sysCrypt = {
+        lock: (data) => btoa(unescape(encodeURIComponent(JSON.stringify(data)))),
+        unlock: (str) => { try { return JSON.parse(decodeURIComponent(escape(atob(str)))); } catch(e){ return null; } }
+    };
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.db-tab').forEach(t => t.classList.remove('tab-active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('content-active'));
+        if(tabId === 'users') {
+            document.querySelector('.db-tab:nth-child(1)').classList.add('tab-active');
+            document.getElementById('tab-users').classList.add('content-active');
+        } else if (tabId === 'pages') {
+            document.getElementById('page-tab-btn').classList.add('tab-active');
+            document.getElementById('tab-pages').classList.add('content-active');
+        } else {
+            document.getElementById('sec-tab-btn').classList.add('tab-active');
+            document.getElementById('tab-security').classList.add('content-active');
+        }
+    }
+    
+    const setUIState = (id, disabled, text, isError = false) => {
+        const el = document.getElementById(id);
+        if(el) { if(el.tagName === 'BUTTON') el.disabled = disabled; if(text !== null) el.innerText = text; }
+        const statusEl = document.getElementById(id.replace('-btn', '-status').replace('-input', '-status'));
+        if(statusEl && text) { statusEl.innerText = isError ? text : ""; statusEl.className = isError ? "status-msg error-msg" : "status-msg"; }
+    };
+
+    function togglePass(inputId, iconElement) {
+        const input = document.getElementById(inputId);
+        if (input.type === "password") {
+            input.type = "text";
+            iconElement.classList.remove("eye-closed");
+            iconElement.classList.add("eye-open");
+        } else {
+            input.type = "password";
+            iconElement.classList.remove("eye-open");
+            iconElement.classList.add("eye-closed");
+        }
+    }
+
+    document.querySelectorAll('.enter-tab').forEach(input => {
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const nextId = this.getAttribute('data-next');
+                if (nextId) { const nextEl = document.getElementById(nextId); if (nextEl) { nextEl.focus(); if (nextEl.tagName === 'BUTTON') nextEl.click(); } }
+            }
+        });
+    });
+
+    window.onload = () => {
+        fetch(API + "?mode=status").then(r => r.json()).then(d => {
+            if (d.isSetup) {
+                document.getElementById('login-container').style.display = 'none';
+                document.getElementById('massive-setup-block').style.display = 'block';
+                return;
+            }
+            sysData.maintenance = d.maintenance;
+            sysData.devs = d.devs || [];
+            checkMaintenancePreflight();
+        }).catch(e=>{});
+
+        const encSession = sessionStorage.getItem('mgc_secure');
+        const activeView = sessionStorage.getItem('mgc_view'); 
+        
+        if (encSession) {
+            const u = sysCrypt.unlock(encSession);
+            const userLinks = sysCrypt.unlock(sessionStorage.getItem('mgc_links_sec') || "[]");
+            if(u) {
+                initVault(u, userLinks);
+                startPhantomKiller();
+                if(activeView === 'db' && (u.role.toLowerCase().includes('admin') || u.role.toLowerCase().includes('developer'))) {
+                    document.getElementById('db-modal').style.display = 'flex';
+                    document.getElementById('auth-zone').style.display = "none";
+                    document.getElementById('vault-zone').style.display = "block";
+                    refreshDB();
+                    liveRadarTimer = setInterval(refreshDB, 5000);
+                }
+            }
+        }
+    };
+
+    async function setupGenesis() {
+        const u = document.getElementById('setup-u').value.trim();
+        const n = document.getElementById('setup-n').value.trim();
+        const p = document.getElementById('setup-p').value.trim();
+        const a = document.getElementById('setup-a').value.trim();
+        const s = document.getElementById('setup-s').value.trim();
+        if(!u || !p || !n || !a || !s) return alert("All fields required.");
+        
+        document.getElementById('setup-btn').innerText = "Initializing...";
+        try {
+            await fetch(API, postConfig({action: "setup_system", username: u, name: n, password: p, auth: a, securityKey: s}));
+            alert("Database Ready! You may now login.");
+            window.location.reload();
+        } catch(e) { document.getElementById('setup-btn').innerText = "Network Error"; }
+    }
+
+    function checkMaintenancePreflight() {
+        const uval = document.getElementById('user').value.trim().toLowerCase();
+        const warnEl = document.getElementById('inline-maint-warning');
+        if (sysData.maintenance && uval.length > 0) {
+            if (!sysData.devs.includes(uval)) { warnEl.style.display = 'block'; } 
+            else { warnEl.style.display = 'none'; }
+        } else { warnEl.style.display = 'none'; }
+    }
+
+    function triggerLockout() {
+        let timeLeft = 30;
+        setUIState('login-btn', true, `Locked (${timeLeft}s)`, true);
+        document.getElementById('login-status').innerText = "Too many failed attempts.";
+        
+        loginLockoutTimer = setInterval(() => {
+            timeLeft--;
+            if(timeLeft <= 0) {
+                clearInterval(loginLockoutTimer);
+                loginFailAttempts = 0;
+                setUIState('login-btn', false, "Login");
+                document.getElementById('login-status').innerText = "";
+            } else {
+                setUIState('login-btn', true, `Locked (${timeLeft}s)`, true);
+            }
+        }, 1000);
+    }
+
+    const loginPhrases = ["Routing through proxies...", "Bypassing firewalls...", "Validating encryption...", "Almost there..."];
+
+    async function login() {
+        if(loginFailAttempts >= 3) return;
+        const u = document.getElementById('user').value.trim();
+        const p = document.getElementById('pass').value.trim();
+        if(!u || !p) return;
+        
+        let phraseIndex = 0;
+        setUIState('login-btn', true, loginPhrases[0]);
+        loadingInterval = setInterval(() => {
+            phraseIndex = (phraseIndex + 1) % loginPhrases.length;
+            setUIState('login-btn', true, loginPhrases[phraseIndex]);
+        }, 1200);
+        
+        try {
+            const res = await fetch(API, postConfig({action: "login", username: u, password: p}));
+            const text = await res.text();
+            clearInterval(loadingInterval); 
+            
+            if (text.startsWith("ERROR:")) { setUIState('login-btn', false, "Login", true); document.getElementById('login-status').innerText = text; return; }
+
+            if (text === "503") { 
+                document.getElementById('login-container').style.display = "none";
+                document.getElementById('massive-maint-block').style.display = "block";
+            } 
+            else if (text === "404" || text === "401") { 
+                loginFailAttempts++;
+                if(loginFailAttempts >= 3) { triggerLockout(); } 
+                else { setUIState('login-btn', false, "Login", true); document.getElementById('login-status').innerText = `Invalid Credentials. ${3 - loginFailAttempts} attempts left.`; }
+            } 
+            else if (text.includes("200")) {
+                setUIState('login-btn', false, "Login Granted!");
+                const data = JSON.parse(text);
+                
+                sessionStorage.setItem('mgc_secure', sysCrypt.lock(data.user));
+                sessionStorage.setItem('mgc_token', data.token); 
+                sessionStorage.setItem('mgc_links_sec', sysCrypt.lock(data.links || []));
+                
+                initVault(data.user, data.links || []);
+                startPhantomKiller();
+            } else { setUIState('login-btn', false, "Login", true); document.getElementById('login-status').innerText = "Server Error."; }
+        } catch(e) { clearInterval(loadingInterval); setUIState('login-btn', false, "Login", true); document.getElementById('login-status').innerText = "Network Offline."; }
+    }
+
+    function initVault(user, links) {
+        document.getElementById('auth-zone').style.display = "none";
+        document.getElementById('vault-zone').style.display = "block";
+        document.getElementById('greet').innerText = `Welcome, ${user.name}`;
+        
+        const role = String(user.role).toLowerCase();
+        if(role.includes('developer') || role.includes('admin')) { document.getElementById('db-btn').style.display = "inline-block"; }
+
+        const linkCont = document.getElementById('dynamic-links-container');
+        if(links && links.length > 0) {
+            linkCont.innerHTML = links.map(l => `<a href="${l.url}" class="f-link">>> ${l.title}</a>`).join('');
+        } else {
+            linkCont.innerHTML = "<div style='color:#555; font-size:10px; font-family:monospace;'>[ No Pages Assigned ]</div>";
+        }
+    }
+
+    function startPhantomKiller() {
+        if(phantomKillerTimer) clearInterval(phantomKillerTimer);
+        phantomKillerTimer = setInterval(async () => {
+            const encSession = sessionStorage.getItem('mgc_secure');
+            const localToken = sessionStorage.getItem('mgc_token');
+            if(!encSession) return;
+            const session = sysCrypt.unlock(encSession);
+            if(!session) return;
+            try {
+                const res = await fetch(API);
+                if(!res.ok) return;
+                const text = await res.text();
+                if (text.startsWith("ERROR:")) return; 
+                
+                const data = JSON.parse(text);
+                const stillActive = data.validTokens.includes(localToken); 
+                const isKickedByRole = data.kicked && data.kicked[session.username];
+
+                if (!stillActive) {
+                    if (isKickedByRole) {
+                        forcePhantomLogout(String(isKickedByRole).toLowerCase().includes('developer') ? "System under maintenance. Try again later." : "Logged out by Administrator.");
+                    } else if (data.maintenance && !String(session.role).toLowerCase().includes('developer')) {
+                        forcePhantomLogout("System under maintenance. Try again later.");
+                    } else {
+                        // Instant session clear on kick
+                        forcePhantomLogout("Session closed.");
+                    }
+                }
+            } catch(e) {} 
+        }, 5000); 
+    }
+
+    // INSTANT LOGOUT OPTIMIZATION (FIRE AND FORGET)
+    async function forcePhantomLogout(message) {
+        clearInterval(phantomKillerTimer);
+        const encSession = sessionStorage.getItem('mgc_secure');
+        if (encSession) {
+            const session = sysCrypt.unlock(encSession);
+            if(session) fetch(API, postConfig({action: "logout", username: session.username, operatorId: session.id, operatorName: session.name})).catch(e => {});
+        }
+        sessionStorage.clear();
+        alert(`Logged Out:\n\n${message}`);
+        window.location.reload();
+    }
+
+    async function logout() {
+        const encSession = sessionStorage.getItem('mgc_secure');
+        if (encSession) {
+            const session = sysCrypt.unlock(encSession);
+            if(session) fetch(API, postConfig({action: "logout", username: session.username, operatorId: session.id, operatorName: session.name})); // Fire & Forget
+        }
+        
+        // Instant visual wipe
+        sessionStorage.clear(); 
+        document.getElementById('vault-zone').style.display = "none";
+        document.getElementById('auth-zone').style.display = "block";
+        setUIState('login-btn', true, "Erasing digital footprints...");
+        
+        setTimeout(() => { window.location.reload(); }, 800); 
+    }
+
+    function openDBAuth() {
+        const encSession = sessionStorage.getItem('mgc_secure');
+        const session = sysCrypt.unlock(encSession);
+        const title = String(session.role).toLowerCase().includes('developer') ? "Developer Authorization" : "Admin Authorization";
+        document.getElementById('db-auth-title').innerText = title;
+        document.getElementById('db-auth-modal').style.display = 'flex';
+        document.getElementById('db-auth-input').value = "";
+        setUIState('decrypt-btn', false, "Verify");
+        document.getElementById('db-auth-input').focus();
+    }
+
+    const dbPhrases = ["Checking security clearance...", "Unlocking the vault...", "Decrypting payload..."];
+
+    async function verifyDBAuth() {
+        const encSession = sessionStorage.getItem('mgc_secure');
+        const session = sysCrypt.unlock(encSession);
+        const inputAuth = document.getElementById('db-auth-input').value.trim();
+        
+        let phraseIndex = 0;
+        setUIState('decrypt-btn', true, dbPhrases[0]);
+        loadingInterval = setInterval(() => {
+            phraseIndex = (phraseIndex + 1) % dbPhrases.length;
+            setUIState('decrypt-btn', true, dbPhrases[phraseIndex]);
+        }, 1200);
+
+        try {
+            const res = await fetch(API, postConfig({action: "verify_auth", username: session.username, authCode: inputAuth}));
+            const text = await res.text();
+            clearInterval(loadingInterval);
+            
+            if (text.startsWith("ERROR:")) { setUIState('decrypt-btn', false, "Verify", true); document.getElementById('decrypt-status').innerText = text; return; }
+
+            if (text === "200") {
+                setUIState('decrypt-btn', false, "Verify");
+                sessionStorage.setItem('mgc_view', 'db'); 
+                closeModals();
+                document.getElementById('db-modal').style.display = 'flex';
+                
+                const isDev = String(session.role).toLowerCase().includes('developer');
+                document.getElementById('logs-btn').style.display = isDev ? "block" : "none";
+                document.getElementById('maint-btn').style.display = isDev ? "block" : "none";
+                document.getElementById('page-tab-btn').style.display = isDev ? "block" : "none";
+                document.getElementById('sec-tab-btn').style.display = isDev ? "block" : "none";
+                
+                const isAdmin = String(session.role).toLowerCase().includes('admin');
+                document.getElementById('btn-add-admin').style.display = (isAdmin || isDev) ? "inline-block" : "none";
+
+                switchTab('users');
+                refreshDB();
+                liveRadarTimer = setInterval(refreshDB, 5000);
+            } else { setUIState('decrypt-btn', false, "Verify", true); document.getElementById('decrypt-status').innerText = "Invalid Auth Code"; }
+        } catch(e) { clearInterval(loadingInterval); setUIState('decrypt-btn', false, "Verify", true); document.getElementById('decrypt-status').innerText = "Database Offline."; }
+    }
+
+    function closeDB() {
+        const encSession = sessionStorage.getItem('mgc_secure');
+        const session = sysCrypt.unlock(encSession);
+        sessionStorage.removeItem('mgc_view'); 
+        closeModals();
+        if(session) fetch(API, postConfig({ action: "log_action", operatorId: session.id, operatorName: session.name, target: "Database", details: "Closed Database Management" }));
+    }
+
+    const dbTablePhrases = ["Compiling database...", "Aligning columns...", "Waking up the hamsters..."];
+
+    async function refreshDB() {
+        // PAUSE REFRESH IF CHECKBOXES ARE SELECTED
+        if(document.querySelectorAll('.user-select:checked').length > 0) return;
+
+        const tbody = document.getElementById('user-body');
+        const pbody = document.getElementById('page-body');
+        const sbody = document.getElementById('sec-body');
+        
+        if(tbody.innerHTML === "") {
+            let pIdx = 0;
+            tbody.innerHTML = `<tr><td colspan='7' style='text-align:center; padding:20px; color:#aaa;' id='db-load-text'>${dbTablePhrases[0]}</td></tr>`;
+            window.dbLoadingInterval = setInterval(() => {
+                const el = document.getElementById('db-load-text');
+                if(el) { pIdx = (pIdx + 1) % dbTablePhrases.length; el.innerText = dbTablePhrases[pIdx]; }
+            }, 1200);
+        }
+        
+        try {
+            const res = await fetch(API);
+            const text = await res.text();
+            clearInterval(window.dbLoadingInterval);
+
+            if (text.startsWith("ERROR:")) { tbody.innerHTML = `<tr><td colspan='7' class='error-msg' style='text-align:center; padding:20px;'>${text}</td></tr>`; return; }
+            
+            masterData = JSON.parse(text);
+            const encSession = sessionStorage.getItem('mgc_secure');
+            const session = sysCrypt.unlock(encSession);
+            const isDev = String(session.role).toLowerCase().includes('developer');
+            
+            let displayUsers = masterData.users;
+            if(!isDev) displayUsers = masterData.users.filter(u => !String(u.role).toLowerCase().includes('developer'));
+            
+            displayUsers.sort((a, b) => (a.status === 'Online' ? -1 : 1));
+
+            document.getElementById('active-count').innerText = `Active Users: ${masterData.active.length}`;
+            
+            tbody.innerHTML = displayUsers.map(u => {
+                const isOnline = u.status === 'Online';
+                const statusHtml = isOnline ? `<span class="status-dot dot-online"></span><span style="color:var(--green)">Online</span>` : `<span class="status-dot dot-offline"></span><span style="color:#777">Offline</span>`;
+                
+                const targetIsDev = String(u.role).toLowerCase().includes('developer');
+                const canKick = (isDev || (!isDev && !targetIsDev)) && isOnline;
+                const logoutBtn = canKick ? `<button class="btn-small btn-red" onclick="forceDisconnect('${u.username}', this)">Logout</button>` : `<span style="color:#555;">-</span>`;
+
+                return `
+                <tr>
+                    <td><input type="checkbox" class="user-select" value="${u.username}"></td>
+                    <td><span class="badge-id">${u.id}</span></td>
+                    <td><b style="color:#fff;">${u.username}</b></td>
+                    <td style="color:#888;">${u.role}</td>
+                    <td style="white-space: nowrap;">${statusHtml}</td>
+                    <td>${logoutBtn}</td>
+                    <td style="text-align: right;"><button class="btn-small" onclick="showEditUser('${u.id}')">Edit</button></td>
+                </tr>`;
+            }).join('');
+
+            if(isDev) {
+                if(masterData.pages) {
+                    pbody.innerHTML = masterData.pages.map(p => {
+                        const pVis = p.status !== 'Hidden';
+                        const pStatHtml = pVis ? `<span class="status-dot dot-online"></span><span style="color:var(--green)">Visible</span>` : `<span class="status-dot dot-hidden"></span><span style="color:var(--red)">Hidden</span>`;
+                        return `
+                        <tr>
+                            <td><span class="badge-id">${p.id}</span></td>
+                            <td><b style="color:#fff;">${p.title}</b></td>
+                            <td style="color:var(--blue);">${p.url}</td>
+                            <td style="color:#888;">${p.allowed}</td>
+                            <td style="white-space: nowrap;">${pStatHtml}</td>
+                            <td style="text-align: right;">
+                                <button class="btn-small" onclick="showEditPage('${btoa(encodeURIComponent(JSON.stringify(p)))}')">Edit</button>
+                                <button class="btn-small btn-red" onclick="deletePage('${p.id}')">Delete</button>
+                            </td>
+                        </tr>`;
+                    }).join('');
+                }
+                
+                let secHtml = "";
+                for(let i=0; i<masterData.keyCount; i++) {
+                    secHtml += `<tr><td>Key #${i+1}</td><td style="color:var(--green);">[ ENCRYPTED HASH ]</td><td style="text-align:right;"><button class="btn-small btn-red" onclick="revokeKey(${i+2})">Revoke</button></td></tr>`;
+                }
+                if(sbody) sbody.innerHTML = secHtml;
+
+                const btn = document.getElementById('maint-btn');
+                btn.innerText = masterData.maintenance ? "Maintenance: ON" : "Maintenance: OFF";
+                btn.className = masterData.maintenance ? "btn-maint-on" : "btn-maint-off";
+            }
+
+            if(document.getElementById('logs-modal').style.display === 'flex') renderLogs();
+
+        } catch(e) { clearInterval(window.dbLoadingInterval); if(tbody.innerHTML.includes("Loading")) tbody.innerHTML = "<tr><td colspan='7' class='error-msg' style='text-align:center; padding:20px;'>Database Error.</td></tr>"; }
+    }
+
+    function toggleAllUsers(source) {
+        let checkboxes = document.querySelectorAll('.user-select');
+        for(let i=0, n=checkboxes.length;i<n;i++) checkboxes[i].checked = source.checked;
+    }
+
+    async function bulkLogout() {
+        const selected = Array.from(document.querySelectorAll('.user-select:checked')).map(cb => cb.value);
+        if(selected.length === 0) return alert("Select at least one user.");
+        if(!confirm(`Force logout ${selected.length} users?`)) return;
+
+        const session = sysCrypt.unlock(sessionStorage.getItem('mgc_secure'));
+        selected.forEach(uname => {
+            const indBtn = document.querySelector(`button[onclick="forceDisconnect('${uname}', this)"]`);
+            if(indBtn) { indBtn.innerText = "Logging Out..."; indBtn.style.opacity = "0.5"; }
+        });
+
+        fetch(API, postConfig({ action: "bulk_logout", targets: selected, operatorId: session.id, operatorName: session.name, operatorRole: session.role })).then(() => {
+            document.querySelectorAll('.user-select').forEach(cb => cb.checked = false);
+            refreshDB();
+        });
+    }
+
+    async function bulkDelete() {
+        const selected = Array.from(document.querySelectorAll('.user-select:checked')).map(cb => cb.value);
+        if(selected.length === 0) return alert("Select at least one user.");
+        
+        const codeInput = document.getElementById('bulk-sec-key');
+        const btn = document.getElementById('btn-bulk-del');
+
+        if(codeInput.style.display === 'none') {
+            codeInput.style.display = 'block'; codeInput.focus(); btn.innerText = "Confirm Delete"; return;
+        }
+        
+        const code = codeInput.value.trim();
+        if(!code) return alert("Master Security Key required.");
+        if(!confirm(`WARNING: Deleting ${selected.length} users is permanent. Proceed?`)) return;
+
+        const session = sysCrypt.unlock(sessionStorage.getItem('mgc_secure'));
+        btn.innerText = "Deleting...";
+        
+        try {
+            const res = await fetch(API, postConfig({ action: "bulk_delete", targets: selected, securityKey: code, operatorId: session.id, operatorName: session.name, operatorRole: session.role }));
+            const text = await res.text();
+            
+            codeInput.value = ""; codeInput.style.display = 'none'; btn.innerText = "Delete Selected";
+
+            if (text === "200") { 
+                if(selected.includes(session.username)) {
+                    alert("You have deleted your own account. Terminating session.");
+                    sessionStorage.clear();
+                    window.location.reload();
+                    return;
+                }
+                document.querySelectorAll('.user-select').forEach(cb => cb.checked = false);
+                refreshDB(); 
+            } 
+            else if (text === "403") { alert("Invalid Security Key!"); }
+        } catch(e) { btn.innerText = "Delete Selected"; }
+    }
+
+    async function toggleMaintenance() {
+        const session = sysCrypt.unlock(sessionStorage.getItem('mgc_secure'));
+        const btn = document.getElementById('maint-btn');
+        masterData.maintenance = !masterData.maintenance;
+        btn.innerText = masterData.maintenance ? "Maintenance: ON" : "Maintenance: OFF";
+        btn.className = masterData.maintenance ? "btn-maint-on" : "btn-maint-off";
+        fetch(API, postConfig({ action: "toggle_maintenance", state: masterData.maintenance, operatorId: session.id, operatorName: session.name })).then(() => refreshDB()); 
+    }
+
+    async function forceDisconnect(target, btnElement) {
+        if(btnElement) { btnElement.innerText = "Logging Out..."; btnElement.style.opacity = "0.5"; }
+        const session = sysCrypt.unlock(sessionStorage.getItem('mgc_secure'));
+        fetch(API, postConfig({ action: "force_logout", targetUser: target, operatorId: session.id, operatorName: session.name, operatorRole: session.role })).then(() => refreshDB());
+    }
+
+    async function addSecurityKey() {
+        const key = prompt("Enter a new Master Security Key:");
+        if(!key) return;
+        const session = sysCrypt.unlock(sessionStorage.getItem('mgc_secure'));
+        await fetch(API, postConfig({ action: "add_key", newKey: key, operatorId: session.id, operatorName: session.name, operatorRole: session.role }));
+        refreshDB();
+    }
+    
+    async function revokeKey(rowIndex) {
+        if(!confirm("Revoke this Master Security Key? It will no longer work.")) return;
+        const session = sysCrypt.unlock(sessionStorage.getItem('mgc_secure'));
+        await fetch(API, postConfig({ action: "revoke_key", rowIndex: rowIndex, operatorId: session.id, operatorName: session.name, operatorRole: session.role }));
+        refreshDB();
+    }
+
+    function openLogsModal() { document.getElementById('db-modal').style.display = 'none'; document.getElementById('logs-modal').style.display = 'flex'; renderLogs(); }
+    function backToDBFromLogs() { document.getElementById('logs-modal').style.display = 'none'; document.getElementById('db-modal').style.display = 'flex'; }
+
+    function renderLogs() {
+        if(!masterData || !masterData.logs) return;
+        const q = document.getElementById('log-filter').value.toLowerCase();
+        document.getElementById('audit-logs').innerHTML = masterData.logs.map(l => {
+            const rowStr = l.join(' ').toLowerCase();
+            if(!rowStr.includes(q)) return '';
+            return `
+            <tr>
+                <td style="color:#888; font-family:'JetBrains Mono'; white-space:nowrap;">${l[0]}</td>
+                <td style="color:#888; font-family:'JetBrains Mono';">${l[1]}</td>
+                <td><span class="badge-id">${l[2]}</span></td>
+                <td style="color:#fff;">${l[3]}</td>
+                <td style="color:#aaa;">${l[4]}</td>
+                <td style="color:var(--blue);">${l[5]}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    function checkUsername() {
+        if(!masterData) return;
+        const input = document.getElementById('edit-u').value.trim().toLowerCase();
+        const original = document.getElementById('edit-u').dataset.original.toLowerCase();
+        const indicator = document.getElementById('user-availability');
+        const saveBtn = document.getElementById('commit-btn');
+        if (input === "" || (input === original && original !== "new")) { indicator.innerText = ""; saveBtn.disabled = false; return; }
+
+        if (masterData.users.some(u => u.username.toLowerCase() === input)) { indicator.innerText = "✖ Unavailable"; indicator.style.color = "var(--red)"; saveBtn.disabled = true; } 
+        else { indicator.innerText = "✔ Available"; indicator.style.color = "var(--green)"; saveBtn.disabled = false; }
+    }
+
+    function showEditUser(userId, forceRole = null) {
+        document.getElementById('db-modal').style.display = 'none';
+        document.getElementById('edit-modal').style.display = 'flex';
+        setUIState('commit-btn', false, "Save Changes");
+        setUIState('del-btn', false, "Delete User");
+        document.getElementById('user-availability').innerText = "";
+        
+        ['edit-p', 'edit-a', 'sec-key'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) { el.type = "password"; const eye = el.nextElementSibling; if(eye) { eye.classList.remove('eye-open'); eye.classList.add('eye-closed'); } }
+        });
+        document.getElementById('sec-key').value = ""; 
+        clearInterval(liveRadarTimer); 
+
+        const session = sysCrypt.unlock(sessionStorage.getItem('mgc_secure'));
+        const isDev = String(session.role).toLowerCase().includes('developer');
+        const isAdmin = String(session.role).toLowerCase().includes('admin');
+
+        let u = null;
+        if(userId) u = masterData.users.find(x => x.id === userId);
+
+        const isTargetAdmin = u && String(u.role).toLowerCase().includes('admin');
+        const isCreatingAdmin = (forceRole === 'Admin');
+        const showAuthBox = isDev || (isAdmin && (isTargetAdmin || isCreatingAdmin));
+        document.getElementById('auth-col-box').style.display = showAuthBox ? "block" : "none";
+
+        if(userId && u) {
+            document.getElementById('edit-title').innerText = "Edit User: " + u.username;
+            document.getElementById('edit-u').value = u.username; 
+            document.getElementById('edit-u').dataset.original = u.username; 
+            document.getElementById('edit-p').value = ""; 
+            document.getElementById('edit-r').value = u.role;
+            document.getElementById('edit-r').readOnly = false;
+            document.getElementById('edit-n').value = u.name; 
+            document.getElementById('edit-a').value = ""; 
+            document.getElementById('delete-zone').style.display = "block";
+        } else {
+            document.getElementById('edit-title').innerText = forceRole === "Admin" ? "Add New Admin" : "Add New User";
+            document.getElementById('edit-u').value = ""; 
+            document.getElementById('edit-u').dataset.original = "NEW";
+            document.getElementById('edit-p').value = ""; 
+            document.getElementById('edit-r').value = forceRole ? forceRole : "";
+            document.getElementById('edit-r').readOnly = forceRole ? true : false;
+            document.getElementById('edit-n').value = "";
+            document.getElementById('edit-a').value = ""; 
+            document.getElementById('delete-zone').style.display = "none";
+        }
+        document.getElementById('edit-u').focus();
+    }
+
+    async function saveUser() {
+        if(!confirm("Are you sure you want to save this user?")) return;
+        const session = sysCrypt.unlock(sessionStorage.getItem('mgc_secure'));
+        const isDev = String(session.role).toLowerCase().includes('developer');
+        const originalUser = document.getElementById('edit-u').dataset.original;
+        const newUsername = document.getElementById('edit-u').value.trim();
+        if(!newUsername) return;
+        
+        setUIState('commit-btn', true, "Saving...");
+        const payload = { action: originalUser === "NEW" ? "add" : "update", operatorId: session.id, operatorName: session.name, targetUser: originalUser === "NEW" ? null : originalUser, username: newUsername, password: document.getElementById('edit-p').value, role: document.getElementById('edit-r').value, name: document.getElementById('edit-n').value };
+        
+        const authBoxVisible = document.getElementById('auth-col-box').style.display !== 'none';
+        if (authBoxVisible) payload.auth = document.getElementById('edit-a').value;
+
+        try {
+            const res = await fetch(API, postConfig(payload));
+            const text = await res.text();
+            if (text === "409") { setUIState('commit-btn', false, "Save Changes", true); document.getElementById('user-availability').innerText = "✖ Unavailable"; document.getElementById('user-availability').style.color = "var(--red)"; } 
+            else { 
+                setUIState('commit-btn', true, "Success!"); 
+                setTimeout(() => { 
+                    clearInterval(liveRadarTimer);
+                    document.getElementById('edit-modal').style.display = 'none'; 
+                    document.getElementById('db-modal').style.display = 'flex'; 
+                    refreshDB(); 
+                    liveRadarTimer = setInterval(refreshDB, 5000); 
+                }, 300); 
+            }
+        } catch(e) { setUIState('commit-btn', false, "Save Changes", true); }
+    }
+
+    async function deleteUser() {
+        const code = document.getElementById('sec-key').value.trim();
+        if(!code) return alert("Master Security Key required.");
+        if(!confirm("WARNING: Deleting a user is permanent. Proceed?")) return;
+
+        const target = document.getElementById('edit-u').dataset.original;
+        const session = sysCrypt.unlock(sessionStorage.getItem('mgc_secure'));
+        setUIState('del-btn', true, "Deleting...");
+        
+        try {
+            const res = await fetch(API, postConfig({action: "delete", targetUser: target, securityKey: code, operatorId: session.id, operatorName: session.name, operatorRole: session.role}));
+            const text = await res.text();
+            document.getElementById('sec-key').value = "";
+            if(text === "200") { 
+                if(target === session.username) {
+                    alert("You have deleted your own account. Terminating session.");
+                    sessionStorage.clear();
+                    window.location.reload();
+                    return;
+                }
+                clearInterval(liveRadarTimer);
+                document.getElementById('edit-modal').style.display = 'none'; 
+                document.getElementById('db-modal').style.display = 'flex'; 
+                refreshDB(); 
+                liveRadarTimer = setInterval(refreshDB, 5000); 
+            } 
+            else if (text === "403") { setUIState('del-btn', false, "Delete User"); document.getElementById('edit-status').innerText = "Invalid Security Key."; document.getElementById('edit-status').className="status-msg error-msg"; } 
+        } catch(e) { setUIState('del-btn', false, "Delete User"); }
+    }
+
+    function showEditPage(encoded) {
+        clearInterval(liveRadarTimer);
+        document.getElementById('db-modal').style.display = 'none';
+        document.getElementById('page-modal').style.display = 'flex';
+        setUIState('commit-page-btn', false, "Save Page");
+        
+        if(encoded) {
+            const p = JSON.parse(decodeURIComponent(atob(encoded)));
+            document.getElementById('page-title').innerText = "Edit Page: " + p.id;
+            document.getElementById('page-t').value = p.title; document.getElementById('page-u').value = p.url;
+            document.getElementById('page-a').value = p.allowed; document.getElementById('page-s').value = p.status || "Visible"; document.getElementById('page-t').dataset.id = p.id;
+        } else {
+            document.getElementById('page-title').innerText = "Add New Page";
+            document.getElementById('page-t').value = ""; document.getElementById('page-u').value = "";
+            document.getElementById('page-a').value = "ALL"; document.getElementById('page-s').value = "Visible"; document.getElementById('page-t').dataset.id = "NEW";
+        }
+    }
+
+    async function savePage() {
+        if(!confirm("Are you sure you want to save this page?")) return;
+        const session = sysCrypt.unlock(sessionStorage.getItem('mgc_secure'));
+        const pId = document.getElementById('page-t').dataset.id;
+        
+        setUIState('commit-page-btn', true, "Saving...");
+        try {
+            await fetch(API, postConfig({
+                action: "save_page", operatorId: session.id, operatorName: session.name,
+                pageId: pId, title: document.getElementById('page-t').value, url: document.getElementById('page-u').value, allowed: document.getElementById('page-a').value, status: document.getElementById('page-s').value
+            }));
+            clearInterval(liveRadarTimer);
+            document.getElementById('page-modal').style.display = 'none'; document.getElementById('db-modal').style.display = 'flex';
+            refreshDB(); liveRadarTimer = setInterval(refreshDB, 5000);
+        } catch(e) { setUIState('commit-page-btn', false, "Save Page", true); }
+    }
+
+    async function deletePage(id) {
+        if(!confirm("Delete this page? It will be removed for all users immediately.")) return;
+        const session = sysCrypt.unlock(sessionStorage.getItem('mgc_secure'));
+        await fetch(API, postConfig({ action: "delete_page", operatorId: session.id, operatorName: session.name, pageId: id }));
+        refreshDB();
+    }
+
+    function closeModals() { 
+        clearInterval(liveRadarTimer); 
+        clearInterval(window.dbLoadingInterval);
+        document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); 
+    }
+    
+    function backToDB() { 
+        clearInterval(liveRadarTimer); 
+        clearInterval(window.dbLoadingInterval);
+        document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); 
+        document.getElementById('db-modal').style.display = 'flex'; 
+        refreshDB(); 
+        liveRadarTimer = setInterval(refreshDB, 5000); 
+    }
+
+    const canvas = document.getElementById('matrix-bg');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    const drops = Array(Math.floor(canvas.width/20)).fill(1);
+    setInterval(() => {
+        ctx.fillStyle = "rgba(5, 10, 20, 0.15)"; ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle = "#0073e6"; ctx.font = "15px monospace";
+        drops.forEach((y, i) => {
+            ctx.fillText(Math.floor(Math.random()*2), i*20, y*20);
+            if(y*20 > canvas.height && Math.random() > 0.98) drops[i] = 0;
+            drops[i]++;
+        });
+    }, 50);
+</script>
+</body>
+</html>
