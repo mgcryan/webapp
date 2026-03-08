@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capital Flow Engine // mgcryan v0.0.0.1</title>
+    <link rel="icon" type="image/png" href="Logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        :root { --blue: #00d4ff; --dark: #050a14; --red: #ff2a55; --green: #00e676; --grey: #444; --gold: #f4d03f; --glass: rgba(8, 12, 22, 0.85); }
+        body { background: var(--dark); font-family: 'Inter', sans-serif; color: #e0e0e0; margin: 0; height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        
+        #matrix-bg { position: fixed; inset: 0; z-index: 1; opacity: 0.15; pointer-events: none; }
+        
+        .glass-panel { 
+            background: var(--glass); border: 1px solid rgba(0, 212, 255, 0.2); backdrop-filter: blur(20px); 
+            padding: 25px; width: 95%; max-width: 550px; max-height: 90vh; overflow-y: auto; overflow-x: hidden;
+            z-index: 10; position: relative; border-radius: 12px; 
+            box-shadow: 0 0 30px rgba(0,0,0,0.9), inset 0 0 20px rgba(0, 212, 255, 0.05); 
+        }
+
+        .flow-light {
+            position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, rgba(0,212,255,0) 0%, rgba(0,212,255,1) 40%, rgba(0,230,118,1) 60%, rgba(0,212,255,0) 100%);
+            background-size: 200% 100%;
+            animation: flowAnim 2.5s infinite linear;
+            z-index: 100;
+        }
+        @keyframes flowAnim {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        .nav-back { color: #aaa; font-size: 11px; cursor: pointer; text-decoration: none; display: inline-block; font-family: 'JetBrains Mono'; transition: 0.3s; padding: 4px 8px; border: 1px solid transparent; border-radius: 4px; }
+        .nav-back:hover { color: #fff; border-color: #555; background: rgba(255,255,255,0.05); text-shadow: 0 0 8px #fff; }
+
+        .calc-lbl { font-size: 10px; color: #888; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.5px; display:flex; align-items:center; }
+        .calc-in-mgc { 
+            width: 100%; padding: 10px 12px; margin-bottom: 0 !important;
+            background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(0, 212, 255, 0.1); border-left: 2px solid rgba(0, 212, 255, 0.3);
+            color: #fff; font-family: 'JetBrains Mono', monospace; 
+            font-size: 12px; outline: none; border-radius: 4px; transition: 0.3s; box-sizing: border-box;
+        }
+        .calc-in-mgc:focus { border-color: var(--blue); border-left-width: 4px; background: rgba(0, 212, 255, 0.05); box-shadow: 0 0 15px rgba(0, 212, 255, 0.15); }
+        
+        .pct-error { border-color: var(--red) !important; color: var(--red) !important; border-left-color: var(--red) !important; box-shadow: 0 0 10px rgba(255,42,85,0.3) !important; background: rgba(255,42,85,0.05) !important; }
+        
+        .btn-small { width: auto; padding: 8px 15px; font-size: 10px; background: rgba(0,0,0,0.5); border: 1px solid #555; color: #ccc; border-radius: 4px; cursor: pointer; transition: 0.3s; font-family: 'JetBrains Mono'; display: flex; align-items: center; justify-content: center; text-align: center; letter-spacing: 0.5px;}
+        .btn-small:hover { background: #222; color: #fff; border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.1); }
+        
+        .dynamic-row { display: contents; }
+        .remove-mgc { background:transparent; border:none; color:var(--red); cursor:pointer; font-size:12px; margin-left:5px; opacity:0.5; transition:0.3s; padding: 2px; }
+        .remove-mgc:hover { opacity:1; text-shadow: 0 0 8px var(--red); transform: scale(1.2); }
+
+        .tab-bar { display: flex; border-bottom: 1px solid rgba(0, 212, 255, 0.2); margin-bottom: 20px; overflow-x: auto; scrollbar-width: none; white-space: nowrap; padding-bottom: 5px; }
+        .tab-bar::-webkit-scrollbar { display: none; }
+        .db-tab { padding: 10px 15px; font-size: 10px; color: #888; cursor: pointer; border-bottom: 2px solid transparent; font-weight: bold; text-transform: uppercase; font-family:'JetBrains Mono'; transition:0.3s; flex-shrink: 0; }
+        .db-tab:hover { color: #fff; background: rgba(255,255,255,0.03); border-radius: 4px 4px 0 0; }
+        .tab-active { color: var(--blue); border-bottom-color: var(--blue); text-shadow: 0 0 8px rgba(0,212,255,0.5); background: rgba(0, 212, 255, 0.05); border-radius: 4px 4px 0 0;}
+        .tab-content { display: none; flex-direction: column; animation: fadeIn 0.3s ease-in-out;}
+        .content-active { display: flex; }
+
+        .hnw-badge { background: rgba(255,42,85,0.1); border: 1px solid var(--red); color: var(--red); font-size: 8px; padding: 2px 4px; border-radius: 2px; margin-left: 5px; animation: pulseRed 2s infinite; }
+        
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; align-items: center; justify-content: center; padding: 15px; box-sizing: border-box; backdrop-filter: blur(5px); }
+        
+        .export-chk-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; background: rgba(0,212,255,0.05); padding: 10px; border-radius: 4px; border: 1px solid rgba(0,212,255,0.15); transition: 0.3s; }
+        .export-chk-wrap:hover { background: rgba(0,212,255,0.1); border-color: var(--blue); }
+        .export-chk-wrap input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--blue); cursor: pointer; }
+        .export-chk-wrap label { color: #fff; font-size: 11px; font-family: 'JetBrains Mono'; cursor: pointer; width: 100%; }
+
+        .calc-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 12px; align-items: center; }
+        .matrix-row-grid { display: grid; grid-template-columns: 2.5fr 1fr 1.5fr 20px; gap: 8px; margin-bottom: 8px; align-items: center; }
+
+        @media (max-width: 600px) { 
+            .glass-panel { padding: 15px; } 
+            .calc-grid { grid-template-columns: 1fr; gap: 8px; }
+            .calc-lbl { margin-top: 4px; }
+            .matrix-row-grid { grid-template-columns: 2fr 1fr 1.5fr 20px; gap: 5px; }
+        }
+
+        @keyframes pulseRed { 0% { opacity: 0.7; } 50% { opacity: 1; box-shadow: 0 0 5px var(--red); } 100% { opacity: 0.7; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #fff; }
+    </style>
+</head>
+<body>
+    <canvas id="matrix-bg"></canvas>
+
+    <div class="glass-panel">
+        <div class="flow-light"></div>
+        
+        <div style="display:flex; justify-content: space-between; align-items: flex-start; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+            <div>
+                <h3 style="color:#fff; letter-spacing:2px; font-size:14px; margin:0 0 5px 0; font-family:'Inter', sans-serif; text-shadow: 0 0 10px rgba(0,212,255,0.5);">🔹 CAPITAL FLOW ENGINE</h3>
+                <span style="font-size:9px; color:var(--blue); font-family:'JetBrains Mono'; font-weight:bold; letter-spacing: 1px;">mgcryan v0.0.0.1 // ONLINE</span>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button onclick="openExportModal()" class="btn-small" style="color:var(--green); border-color:var(--green); box-shadow: inset 0 0 5px rgba(0,230,118,0.2);">[ EXPORT REPORT ]</button>
+                <a href="javascript:history.back()" class="nav-back">← RETURN</a>
+            </div>
+        </div>
+
+        <div class="tab-bar">
+            <div class="db-tab tab-active" onclick="switchTab('flow')">Capital Flow</div>
+            <div class="db-tab" onclick="switchTab('area')">Area Engine</div>
+            <div class="db-tab" onclick="switchTab('matrix')">Payment Matrix</div>
+            <div class="db-tab" onclick="switchTab('loan')">Mortgage</div>
+        </div>
+
+        <div id="tab-flow" class="tab-content content-active">
+            <div id="calc-grid" class="calc-grid">
+                <label class="calc-lbl">AGREEMENT VALUE</label>
+                <input type="text" id="val-agg" placeholder="e.g. 44,44,444" onkeyup="computeFlow(); syncAcrossTabs();" class="calc-in-mgc" style="border-color:var(--gold); border-left-color:var(--gold);">
+
+                <label class="calc-lbl" style="width:100%;">GST (%) <span id="lbl-amt-gst" style="margin-left:auto; color:var(--green); font-weight:bold;"></span></label>
+                <input type="number" id="val-gst-p" placeholder="%" onkeyup="computeFlow()" class="calc-in-mgc">
+
+                <label class="calc-lbl" style="width:100%;">STAMP DUTY (%) <span id="lbl-amt-sd" style="margin-left:auto; color:var(--green); font-weight:bold;"></span></label>
+                <input type="number" id="val-sd-p" placeholder="%" onkeyup="computeFlow()" class="calc-in-mgc">
+
+                <label class="calc-lbl" style="width:100%;">REGISTRATION (%) <span style="color:var(--red); font-size:8px; margin-left:5px;">[30K CAP]</span> <span id="lbl-amt-reg" style="margin-left:auto; color:var(--green); font-weight:bold;"></span></label>
+                <input type="number" id="val-reg-p" placeholder="%" onkeyup="computeFlow()" class="calc-in-mgc">
+
+                <label class="calc-lbl">LEGAL & DOCS</label>
+                <input type="text" id="val-legal" placeholder="0.00" onkeyup="computeFlow()" class="calc-in-mgc">
+
+                <label id="lbl-tds" class="calc-lbl" style="display:none; color:var(--red); width:100%;">TDS (>50L) <span class="hnw-badge">GOVT MANDATE</span> <span id="lbl-amt-tds" style="margin-left:auto; color:var(--red); font-weight:bold;"></span></label>
+                <input type="number" id="val-tds-p" value="1" placeholder="%" onkeyup="computeFlow()" class="calc-in-mgc hnw-field" style="display:none; border-color:var(--red); border-left-color:var(--red);">
+
+                <label id="lbl-cess" class="calc-lbl" style="display:none; color:var(--red); width:100%;">METRO CESS (>1Cr) <span class="hnw-badge">SURCHARGE</span> <span id="lbl-amt-cess" style="margin-left:auto; color:var(--red); font-weight:bold;"></span></label>
+                <input type="number" id="val-cess-p" value="1" placeholder="%" onkeyup="computeFlow()" class="calc-in-mgc hnw-field" style="display:none; border-color:var(--red); border-left-color:var(--red);">
+            </div>
+
+            <div style="margin-top:15px; text-align:right;">
+                <button onclick="addCustomField()" class="btn-small" style="color:var(--blue); border-color:var(--blue); font-size:9px; margin-left: auto;">+ OTHER CHARGES</button>
+            </div>
+
+            <div style="margin-top: 20px; padding: 20px; border-top: 1px dashed rgba(0, 212, 255, 0.2); background: rgba(0, 0, 0, 0.4); border-radius:4px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);">
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                    <span style="font-size:10px; color:#aaa; font-family:'JetBrains Mono';">GOVT TAXES & LEGAL:</span>
+                    <span id="out-govt" style="color:var(--gold); font-family:'JetBrains Mono'; font-weight:bold;">₹ 0.00</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                    <span style="font-size:10px; color:#aaa; font-family:'JetBrains Mono';">OTHER CHARGES:</span>
+                    <span id="out-custom" style="color:var(--blue); font-family:'JetBrains Mono'; font-weight:bold;">₹ 0.00</span>
+                </div>
+
+                <div style="background:rgba(0, 212, 255, 0.08); padding:15px; border-radius:4px; border:1px solid var(--blue); border-left: 4px solid var(--blue); display:flex; justify-content:space-between; align-items:center; box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);">
+                    <span style="font-size:11px; color:#fff; font-weight:bold; letter-spacing:1px; font-family:'JetBrains Mono';">TOTAL FLAT COST:</span>
+                    <span id="out-total" style="color:var(--green); font-family:'JetBrains Mono'; font-size:18px; font-weight:800; text-shadow: 0 0 10px var(--green);">₹ 0.00</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-area" class="tab-content">
+            <div class="calc-grid">
+                <label class="calc-lbl">TOTAL SQ.FT AREA</label>
+                <input type="text" id="area-sqft" placeholder="e.g. 786" onkeyup="computeArea()" class="calc-in-mgc">
+
+                <label class="calc-lbl">RATE PER SQ.FT (₹)</label>
+                <input type="text" id="area-rate" placeholder="e.g. 4,444" onkeyup="computeArea()" class="calc-in-mgc">
+
+                <label class="calc-lbl">PARKING / AMENITIES</label>
+                <input type="text" id="area-amen" placeholder="Fixed amount" onkeyup="computeArea()" class="calc-in-mgc">
+            </div>
+
+            <div style="margin-top: 20px; padding: 15px; background: rgba(0, 0, 0, 0.4); border-radius:4px; border: 1px solid rgba(255,255,255,0.1); border-left: 4px solid var(--gold);">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:11px; color:#aaa; font-family:'JetBrains Mono';">BASE AGREEMENT VAL:</span>
+                    <span id="out-area-val" style="color:var(--gold); font-family:'JetBrains Mono'; font-size:16px; font-weight:bold;">₹ 0.00</span>
+                </div>
+            </div>
+            
+            <button onclick="pushToFlow()" style="margin-top:15px; width:100%; background:rgba(0,212,255,0.05); border:1px dashed var(--blue); color:var(--blue);" class="btn-small">[ SYNC TO CAPITAL FLOW ]</button>
+        </div>
+
+        <div id="tab-matrix" class="tab-content">
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center; gap: 10px; flex-wrap: wrap;">
+                <div style="flex-grow: 1;">
+                    <label class="calc-lbl" style="margin-bottom: 5px; color:var(--gold);">BASE VALUE (EDITABLE)</label>
+                    <input type="text" id="matrix-val-agg" placeholder="0.00" onkeyup="computeMatrix()" class="calc-in-mgc" style="width:100%; max-width: 200px; padding: 8px; border-color:var(--gold); border-left-color:var(--gold);">
+                </div>
+                <div style="font-size:10px; font-family:'JetBrains Mono'; text-align: right; background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 4px; border: 1px solid #333;">
+                    MATRIX VALIDATION <br><span id="matrix-total-pct" style="color:var(--green); font-weight:bold; transition: 0.3s; font-size:16px; text-shadow: 0 0 8px var(--green);">100%</span>
+                </div>
+            </div>
+
+            <div class="matrix-row-grid" style="color:#aaa; font-size:9px; font-family:'JetBrains Mono'; border-bottom:1px dashed rgba(255,255,255,0.1); padding-bottom:5px;">
+                <span>MILESTONE NAME</span>
+                <span>PCT (%)</span>
+                <span style="text-align:right;">AMOUNT (₹)</span>
+                <span></span>
+            </div>
+
+            <div id="matrix-rows-container" style="max-height: 250px; overflow-y: auto; overflow-x: hidden; margin-bottom: 15px; padding-right: 5px;"></div>
+
+            <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                <button onclick="addMatrixRow('', '')" class="btn-small" style="color:var(--blue); border-color:var(--blue);">+ ADD ROW</button>
+                <div style="display:flex; gap:10px;">
+                    <input type="file" id="scan-file" accept=".xlsx, .xls, .csv, .pdf" style="display:none;" onchange="importData(event)">
+                    <button onclick="document.getElementById('scan-file').click()" class="btn-small" style="color:var(--gold); border-color:var(--gold);">↓ SCAN DOCS</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-loan" class="tab-content">
+            <div class="calc-grid">
+                <label class="calc-lbl" style="display:flex; flex-direction:column; align-items:flex-start;">
+                    PROPERTY VALUE
+                    <div style="display:flex; flex-wrap:wrap; gap: 8px; margin-top: 8px; margin-bottom: 4px;">
+                        <label style="font-size:9px; cursor:pointer; color:#aaa; display:flex; align-items:center; gap:4px; font-family:'JetBrains Mono';"><input type="radio" name="loan-src" value="custom" checked onchange="syncLoanSource()" style="margin:0; accent-color:var(--blue);"> CUSTOM</label>
+                        <label style="font-size:9px; cursor:pointer; color:#aaa; display:flex; align-items:center; gap:4px; font-family:'JetBrains Mono';"><input type="radio" name="loan-src" value="cap-agg" onchange="syncLoanSource()" style="margin:0; accent-color:var(--blue);"> CAP(AGG)</label>
+                        <label style="font-size:9px; cursor:pointer; color:#aaa; display:flex; align-items:center; gap:4px; font-family:'JetBrains Mono';"><input type="radio" name="loan-src" value="cap-tot" onchange="syncLoanSource()" style="margin:0; accent-color:var(--blue);"> CAP(TOT)</label>
+                        <label style="font-size:9px; cursor:pointer; color:#aaa; display:flex; align-items:center; gap:4px; font-family:'JetBrains Mono';"><input type="radio" name="loan-src" value="area" onchange="syncLoanSource()" style="margin:0; accent-color:var(--blue);"> AREA</label>
+                    </div>
+                </label>
+                <input type="text" id="loan-prop" placeholder="Total Cost" onkeyup="customLoanInput()" class="calc-in-mgc" style="border-color:var(--gold); border-left-color:var(--gold);">
+
+                <label class="calc-lbl">DOWNPAYMENT (%)</label>
+                <input type="number" id="loan-dp-p" value="20" placeholder="%" onkeyup="computeEMI()" class="calc-in-mgc">
+
+                <label class="calc-lbl">INTEREST RATE (%)</label>
+                <input type="number" id="loan-int" value="8.5" step="0.1" onkeyup="computeEMI()" class="calc-in-mgc">
+
+                <label class="calc-lbl">TENURE (YEARS)</label>
+                <input type="number" id="loan-yrs" value="20" onkeyup="computeEMI()" class="calc-in-mgc">
+            </div>
+
+            <div style="margin-top: 20px; padding: 15px; border-top: 1px dashed rgba(0, 212, 255, 0.2); background: rgba(0, 0, 0, 0.4); border-radius:4px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);">
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                    <span style="font-size:10px; color:#aaa; font-family:'JetBrains Mono';">DOWNPAYMENT AMT:</span>
+                    <span id="out-dp-amt" style="color:var(--gold); font-family:'JetBrains Mono'; font-weight:bold;">₹ 0.00</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                    <span style="font-size:10px; color:#aaa; font-family:'JetBrains Mono';">PRINCIPAL LOAN:</span>
+                    <span id="out-loan-amt" style="color:#fff; font-family:'JetBrains Mono'; font-weight:bold;">₹ 0.00</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                    <span style="font-size:10px; color:#aaa; font-family:'JetBrains Mono';">TOTAL INTEREST PAYABLE:</span>
+                    <span id="out-tot-int" style="color:var(--red); font-family:'JetBrains Mono'; font-weight:bold;">₹ 0.00</span>
+                </div>
+                <div style="background:rgba(255, 42, 85, 0.08); padding:15px; border-radius:4px; border:1px solid var(--red); border-left: 4px solid var(--red); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; box-shadow: 0 0 20px rgba(255, 42, 85, 0.1);">
+                    <span style="font-size:11px; color:#fff; font-weight:bold; letter-spacing:1px; font-family:'JetBrains Mono';">MONTHLY EMI:</span>
+                    <span id="out-emi" style="color:var(--red); font-family:'JetBrains Mono'; font-size:18px; font-weight:800; text-shadow: 0 0 10px rgba(255,42,85,0.5);">₹ 0.00</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; padding: 0 5px;">
+                    <span style="font-size:11px; color:#888; font-family:'JetBrains Mono';">TOTAL REPAYMENT:</span>
+                    <span id="out-tot-pay" style="color:#fff; font-family:'JetBrains Mono'; font-weight:bold;">₹ 0.00</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="calc-humor" style="text-align:center; font-size:9px; color:var(--blue); margin-top:20px; font-family:'JetBrains Mono'; text-transform:uppercase; letter-spacing:1px; min-height: 12px; transition: 0.3s; text-shadow: 0 0 5px rgba(0,212,255,0.3);">
+            >> SYSTEM BOOT SEQUENCE INITIATED...
+        </div>
+    </div>
+
+    <div class="modal" id="export-modal">
+        <div class="glass-panel" style="width: 90%; max-width: 320px; z-index: 110; padding: 20px;">
+            <div class="flow-light"></div>
+            <h3 style="color:#fff; margin:0 0 15px 0; border-bottom:1px dashed rgba(0,212,255,0.3); padding-bottom:10px; text-shadow: 0 0 10px rgba(0,212,255,0.5);">DATA EXPORT PROTOCOL</h3>
+            <p style="font-size: 10px; color: #aaa; font-family: 'JetBrains Mono'; margin-bottom: 15px;">Select modules for final compilation:</p>
+            
+            <div class="export-chk-wrap">
+                <input type="checkbox" id="chk-flow" checked>
+                <label for="chk-flow">Capital Flow (Taxes)</label>
+            </div>
+            <div class="export-chk-wrap">
+                <input type="checkbox" id="chk-area">
+                <label for="chk-area">Area Engine</label>
+            </div>
+            <div class="export-chk-wrap">
+                <input type="checkbox" id="chk-matrix" checked>
+                <label for="chk-matrix">Payment Matrix</label>
+            </div>
+            <div class="export-chk-wrap">
+                <input type="checkbox" id="chk-loan">
+                <label for="chk-loan">Mortgage Estimator</label>
+            </div>
+
+            <div style="margin-top: 15px; margin-bottom: 15px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 4px; border: 1px solid #333;">
+                <label style="color:#aaa; font-size:9px; font-family:'JetBrains Mono'; display:block; margin-bottom:8px;">PDF COLOR THEME:</label>
+                <div style="display:flex; gap:15px;">
+                    <label style="color:#fff; font-size:10px; font-family:'JetBrains Mono'; cursor:pointer;"><input type="radio" name="pdf-theme" value="auto" checked style="accent-color:var(--blue);"> AUTO</label>
+                    <label style="color:#fff; font-size:10px; font-family:'JetBrains Mono'; cursor:pointer;"><input type="radio" name="pdf-theme" value="dark" style="accent-color:var(--blue);"> DARK</label>
+                    <label style="color:#fff; font-size:10px; font-family:'JetBrains Mono'; cursor:pointer;"><input type="radio" name="pdf-theme" value="light" style="accent-color:var(--blue);"> LIGHT</label>
+                </div>
+            </div>
+
+            <div style="display:flex; gap: 10px; margin-top: 10px;">
+                <button onclick="executeExport('pdf')" class="btn-small" style="background:rgba(255,42,85,0.2); border-color:var(--red); color:#fff; width:50%; font-weight:bold; box-shadow: inset 0 0 5px rgba(255,42,85,0.3);">GEN PDF</button>
+                <button onclick="executeExport('excel')" class="btn-small" style="background:rgba(0,230,118,0.2); border-color:var(--green); color:#fff; width:50%; font-weight:bold; box-shadow: inset 0 0 5px rgba(0,230,118,0.3);">GEN EXCEL</button>
+            </div>
+            <button onclick="closeExportModal()" class="btn-small" style="background:transparent; color:#888; border-color:#555; margin-top:10px; width:100%;">ABORT SEQUENCE</button>
+        </div>
+    </div>
+
+<script>
+    // --- LOCAL STORAGE SECURITY PROTOCOL ---
+    const sysCrypt = {
+        unlock: (str) => { try { return JSON.parse(decodeURIComponent(escape(atob(str)))); } catch(e){ return null; } }
+    };
+
+    let activeUser = "AUTHORIZED ADMIN";
+    let currentTab = 'flow';
+
+    window.onload = () => {
+        try {
+            const encSession = sessionStorage.getItem('mgc_secure');
+            if (encSession) {
+                const sessionData = sysCrypt.unlock(encSession);
+                if(sessionData && (sessionData.username || sessionData.user || sessionData.name)) {
+                    activeUser = sessionData.username || sessionData.user || sessionData.name;
+                }
+            }
+        } catch(e) { console.warn("Local testing active."); }
+
+        initMatrix();
+        
+        try {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+        } catch(e) { console.warn("PDF Worker fallback initiated."); }
+
+        // Start Humor Engine
+        cycleHumor();
+        setInterval(cycleHumor, 4500);
+    };
+
+    // --- GLOBAL ENTER KEY NAVIGATION ---
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            const inputs = Array.from(document.querySelectorAll('input.calc-in-mgc:not([style*="display: none"])'));
+            const index = inputs.indexOf(e.target);
+            if (index > -1 && index < inputs.length - 1) {
+                e.preventDefault();
+                inputs[index + 1].focus();
+            }
+        }
+    });
+
+    // --- MATRIX BACKGROUND ---
+    const canvas = document.getElementById('matrix-bg');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    const drops = Array(Math.floor(canvas.width/20)).fill(1);
+    setInterval(() => {
+        ctx.fillStyle = "rgba(5, 10, 20, 0.15)"; ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle = "#00d4ff"; ctx.font = "15px monospace";
+        drops.forEach((y, i) => {
+            ctx.fillText(Math.floor(Math.random()*2), i*20, y*20);
+            if(y*20 > canvas.height && Math.random() > 0.98) drops[i] = 0;
+            drops[i]++;
+        });
+    }, 50);
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.db-tab').forEach(t => t.classList.remove('tab-active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('content-active'));
+        event.target.classList.add('tab-active');
+        document.getElementById('tab-' + tabId).classList.add('content-active');
+        currentTab = tabId;
+        updateHumorOverride("Switching tactical UI views...");
+    }
+
+    function getRaw(id) {
+        const val = document.getElementById(id).value || "0";
+        return parseFloat(val.toString().replace(/,/g, '')) || 0;
+    }
+
+    function formatCurrency(num) {
+        if(isNaN(num) || !isFinite(num)) return "₹ 0";
+        return "₹ " + num.toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 0 });
+    }
+
+    // --- DYNAMIC HARDCORE HUMOR AI ENGINE ---
+    let humorIndex = 0;
+    let manualHumorOverride = false;
+    let overrideTimer;
+
+    const humorBank = {
+        flow: [
+            () => `Calculating legal extortion rates...`,
+            () => `Rounding for the Architect...`,
+            () => { const agg = getRaw('val-agg'); return agg > 0 ? `Laundering ₹${agg.toLocaleString('en-IN')} through the mainframe...` : `Awaiting fiscal payload...`; },
+            () => { const tot = document.getElementById('out-total').innerText; return tot !== "₹ 0" ? `Total damage detected at ${tot}. Time to sell a kidney.` : `Scanning for hidden government surcharges...`; },
+            () => { const gst = document.getElementById('lbl-amt-gst').innerText; return gst && gst !== "₹ 0" ? `Donating ${gst} to the Govt yacht fund...` : `Checking tax loop-holes...`; },
+            () => { const sd = document.getElementById('lbl-amt-sd').innerText; return sd && sd !== "₹ 0" ? `Stamp Duty of ${sd}. Trees died for this paperwork.` : `Licking digital stamps...`; },
+            () => { const reg = document.getElementById('lbl-amt-reg').innerText; return reg !== "₹ 0" ? `Registration logged at ${reg}. The registrar is weeping silently.` : `30K Registration Cap engaged.`; },
+            () => { const legal = getRaw('val-legal'); return legal > 0 ? `Adding ₹${legal.toLocaleString('en-IN')} to the lawyer's vacation fund.` : `Searching for legal loopholes...`; },
+            () => { const tds = document.getElementById('val-tds-p').value; const agg = getRaw('val-agg'); return agg >= 5000000 ? `High Net Worth detected. Slapping ${tds}% TDS penalty.` : `Peasant mode active. No TDS.`; },
+            () => { const cess = document.getElementById('val-cess-p').value; const agg = getRaw('val-agg'); return agg >= 10000000 ? `1 Cr+ Agreement! Welcome to the 1%, Boss Ryan. Here's a ${cess}% Metro Cess.` : `Crunching fiat currency algorithms...`; },
+            () => { const outGovt = document.getElementById('out-govt').innerText; return outGovt !== "₹ 0" ? `Govt Taxes standing at ${outGovt}. The taxman smiles.` : `Bleeding digital capital... Please stand by.`; },
+            () => { const outCust = document.getElementById('out-custom').innerText; return outCust !== "₹ 0" ? `Other charges hit ${outCust}. Builders gotta eat too.` : `Scanning for invisible surcharges...`; },
+            () => { const sdP = document.getElementById('val-sd-p').value; return sdP > 0 ? `Stamp duty set to ${sdP}%. Highway robbery in progress.` : `Awaiting stamp duty parameter...`; },
+            () => { const gstP = document.getElementById('val-gst-p').value; return gstP > 0 ? `GST at ${gstP}%. Value supposedly added.` : `Calibrating tax matrix...`; },
+            () => `Injecting other charges. You're paying for a pool you'll never use.`,
+            () => `Bypassing legacy fiscal constraints...`
+        ],
+        area: [
+            () => `Compiling physical geometry into fiat currency...`,
+            () => `Scanning spatial dimensions...`,
+            () => { const sqft = getRaw('area-sqft'); return sqft > 0 ? `Locking in ${sqft.toLocaleString('en-IN')} sq.ft of premium oxygen.` : `Awaiting dimensional input...`; },
+            () => { const rate = getRaw('area-rate'); return rate > 0 ? `At ₹${rate.toLocaleString('en-IN')} per sq.ft, these floor tiles better be self-cleaning.` : `Appraising floor tiles...`; },
+            () => { const amen = getRaw('area-amen'); return amen > 0 ? `Amenities charge: ₹${amen.toLocaleString('en-IN')}. Your car lives better than you.` : `Loading oxygen subscription fees...`; },
+            () => { const tot = document.getElementById('out-area-val').innerText; return tot !== "₹ 0" ? `Base geometry locked at ${tot}.` : `Calculating the price of thin air...`; },
+            () => `Multiplying space by arbitrary capitalist metrics...`,
+            () => `Digitizing real-world assets into the matrix...`,
+            () => { const sqft = getRaw('area-sqft'); const rate = getRaw('area-rate'); return (sqft > 0 && rate > 0) ? `Area Engine sync: ${sqft} x ${rate} = Financial Pain.` : `Awaiting X, Y, Z coordinates...`; },
+            () => `Warning: Balcony space not meant for existential crises.`,
+            () => { const rate = getRaw('area-rate'); return rate > 10000 ? `₹${rate.toLocaleString('en-IN')} a foot? Hope the view includes another galaxy.` : `Assessing concrete valuation...`; },
+            () => { const amen = getRaw('area-amen'); return amen > 500000 ? `₹${amen.toLocaleString('en-IN')} for amenities? The gym is probably still broken.` : `Mapping clubhouse coordinates...`; },
+            () => { const sqft = getRaw('area-sqft'); return sqft < 400 && sqft > 0 ? `Compressing human existence into ${sqft} square feet.` : `Validating carpet area geometry...`; },
+            () => `Calculating the premium for four walls and a roof...`,
+            () => { const tot = document.getElementById('out-area-val').innerText; return tot !== "₹ 0" ? `Total base value hovering around ${tot}... Proceed with caution.` : `Rendering blueprint architecture...`; },
+            () => `Geometry confirmed. Ready to transfer coordinates to vault.`
+        ],
+        matrix: [
+            () => `Synchronizing builder ledgers...`,
+            () => `Validating milestone extraction protocols...`,
+            () => { const pct = document.getElementById('matrix-total-pct').innerText; return pct === "100%" ? `Matrix alignment stabilized perfectly at 100%.` : `WARNING: Matrix alignment at ${pct}. Recalibration Required.`; },
+            () => { const agg = getRaw('matrix-val-agg'); return agg > 0 ? `Slicing ₹${agg.toLocaleString('en-IN')} into digestible fiscal packets...` : `Siphoning funds sequentially...`; },
+            () => { const rows = document.querySelectorAll('.matrix-entry').length; return rows > 0 ? `Matrix grid loaded. Found ${rows} ways to empty your bank account.` : `Awaiting milestone injection...`; },
+            () => `Plinth / Foundation verified. Structural integrity: Nominal.`,
+            () => `Row injected. Because paying it all at once causes heart failure.`,
+            () => `Calculating Possession amount... The final boss fight of real estate.`,
+            () => { const pct = document.getElementById('matrix-total-pct').innerText; return pct !== "100%" ? `Red alert. Math is failing. The Builder will be angry.` : `Ledger harmony achieved.`; },
+            () => { const agg = getRaw('matrix-val-agg'); return agg > 5000000 ? `Allocating a massive ₹${agg.toLocaleString('en-IN')} across time and space.` : `Extracting funds milestone by milestone...`; },
+            () => `Scanning for random delayed construction penalties...`,
+            () => `Validating AI extraction. Neo would be proud.`,
+            () => { const rows = document.querySelectorAll('.matrix-entry').length; return rows > 5 ? `Current milestone count: ${rows}. Let the bleeding commence.` : `Compiling short-term fiscal damage...`; },
+            () => `Slabs completion approaching. Better have the cheque ready.`,
+            () => `Brickwork & Plaster phase... currently funding the cement cartel.`,
+            () => `Matrix nodes secured. Capital flow distribution is active.`
+        ],
+        loan: [
+            () => `Simulating decades of compound interest...`,
+            () => `Consulting the banking hamsters...`,
+            () => { const prop = getRaw('loan-prop'); return prop > 0 ? `Locking a ₹${prop.toLocaleString('en-IN')} asset into the debt matrix...` : `Awaiting property value...`; },
+            () => { const dp = document.getElementById('out-dp-amt').innerText; return dp !== "₹ 0" ? `Pledging ${dp} as the downpayment for your soul...` : `Checking couch cushions for downpayment...`; },
+            () => { const yrs = getRaw('loan-yrs'); const rate = getRaw('loan-int'); return (yrs > 0 && rate > 0) ? `${yrs} years at ${rate}%? The bank is buying a second yacht.` : `Calculating timeline to freedom...`; },
+            () => { const emi = document.getElementById('out-emi').innerText; return emi !== "₹ 0" ? `Monthly EMI: ${emi}. Say goodbye to your weekend plans.` : `Calculating monthly sorrow...`; },
+            () => { const loan = document.getElementById('out-loan-amt').innerText; return loan !== "₹ 0" ? `Principal trap of ${loan} activated.` : `Awaiting principal trap amount...`; },
+            () => { const int = document.getElementById('out-tot-int').innerText; return int !== "₹ 0" ? `Total Interest: ${int}. You're literally buying the bank a house.` : `Simulating total lifetime loss...`; },
+            () => { const repay = document.getElementById('out-tot-pay').innerText; return repay !== "₹ 0" ? `Total Repayment: ${repay}. Mathematics is depressing.` : `Compiling final financial ruin...`; },
+            () => { const dpP = getRaw('loan-dp-p'); return dpP < 20 && dpP > 0 ? `Only ${dpP}% downpayment? The system judges your liquidity.` : `Switching capital source... Denial is a valid strategy.`; },
+            () => `Running foreclosure probability algorithms... Just in case.`,
+            () => { const yrs = getRaw('loan-yrs'); return yrs >= 20 ? `Debt timeline spanning ${yrs} years. You'll be old by the time you own this.` : `Accelerating debt repayment cycles...`; },
+            () => { const rate = getRaw('loan-int'); return rate > 9 ? `Interest rate at ${rate}%. Capitalism at its finest.` : `Scanning for optimal lending rates...`; },
+            () => { const loan = document.getElementById('out-loan-amt').innerText; return loan !== "₹ 0" ? `Principal of ${loan} is just the appetizer. Interest is the main course.` : `Bypassing underwriter logic...`; },
+            () => { const emi = document.getElementById('out-emi').innerText; return emi !== "₹ 0" ? `Output: ${emi} per month. Your future self is crying.` : `Optimizing monthly fiscal bleed...`; },
+            () => `Securing mortgage node. Handing over financial independence.`
+        ]
+    };
+
+    function cycleHumor() {
+        if(manualHumorOverride) return;
+        const jokes = humorBank[currentTab];
+        if(jokes) {
+            document.getElementById('calc-humor').innerText = ">> " + jokes[humorIndex % jokes.length]().toUpperCase();
+            humorIndex++;
+        }
+    }
+
+    function updateHumorOverride(msg, isErr=false) {
+        manualHumorOverride = true;
+        const el = document.getElementById('calc-humor');
+        el.innerText = ">> " + msg.toUpperCase();
+        el.style.color = isErr ? "var(--red)" : "var(--blue)";
+        clearTimeout(overrideTimer);
+        overrideTimer = setTimeout(() => { 
+            manualHumorOverride = false; 
+            el.style.color = "var(--blue)";
+            cycleHumor(); 
+        }, 3500);
+    }
+
+    // ==========================================
+    // DECOUPLED TAB SYNC PROTOCOL
+    // ==========================================
+    function syncAcrossTabs() {
+        const agg = getRaw('val-agg');
+        const formatted = agg > 0 ? agg.toLocaleString('en-IN') : "";
+        
+        document.getElementById('matrix-val-agg').value = formatted;
+        computeMatrix();
+        syncLoanSource();
+    }
+
+    // ==========================================
+    // MODULE 1: HNW CAPITAL FLOW LOGIC
+    // ==========================================
+    function addCustomField() {
+        const labelName = prompt("DEFINE OTHER CHARGE (e.g. Maintenance):");
+        if (!labelName) return;
+        const grid = document.getElementById('calc-grid');
+        const uniqueId = "dyn-" + Date.now();
+        const wrapper = document.createElement('div');
+        wrapper.id = "wrap-" + uniqueId;
+        wrapper.className = "dynamic-row";
+        wrapper.innerHTML = `
+            <label class="calc-lbl" style="width:100%;">${labelName.toUpperCase()} <button class="remove-mgc" onclick="removeField('${uniqueId}')" tabindex="-1">[✖]</button></label>
+            <input type="text" id="${uniqueId}" placeholder="0.00" onkeyup="computeFlow()" class="calc-in-mgc dynamic-fee" data-label="${labelName.toUpperCase()}">
+        `;
+        grid.appendChild(wrapper);
+        document.getElementById(uniqueId).focus();
+        updateHumorOverride("Other charge protocol injected.");
+    }
+
+    function removeField(id) { document.getElementById("wrap-" + id).remove(); computeFlow(); }
+
+    function computeFlow() {
+        const agg = getRaw('val-agg');
+        const gstP = getRaw('val-gst-p');
+        const sdP = getRaw('val-sd-p');
+        const regP = getRaw('val-reg-p');
+        const legal = getRaw('val-legal');
+
+        const tdsLbl = document.getElementById('lbl-tds');
+        const tdsInp = document.getElementById('val-tds-p');
+        const cessLbl = document.getElementById('lbl-cess');
+        const cessInp = document.getElementById('val-cess-p');
+
+        if(agg >= 5000000) { tdsLbl.style.display = "flex"; tdsInp.style.display = "block"; } 
+        else { tdsLbl.style.display = "none"; tdsInp.style.display = "none"; tdsInp.value = "1"; } 
+
+        if(agg >= 10000000) { cessLbl.style.display = "flex"; cessInp.style.display = "block"; } 
+        else { cessLbl.style.display = "none"; cessInp.style.display = "none"; cessInp.value = "1"; }
+
+        const gstVal = agg * (gstP / 100);
+        const stampDuty = agg * (sdP / 100);
+        let registration = agg * (regP / 100);
+        if (registration > 30000) registration = 30000; 
+
+        const tdsVal = (agg >= 5000000) ? agg * (getRaw('val-tds-p') / 100) : 0;
+        const cessVal = (agg >= 10000000) ? agg * (getRaw('val-cess-p') / 100) : 0;
+
+        document.getElementById('lbl-amt-gst').innerText = formatCurrency(gstVal);
+        document.getElementById('lbl-amt-sd').innerText = formatCurrency(stampDuty);
+        document.getElementById('lbl-amt-reg').innerText = formatCurrency(registration);
+        document.getElementById('lbl-amt-tds').innerText = formatCurrency(tdsVal);
+        document.getElementById('lbl-amt-cess').innerText = formatCurrency(cessVal);
+
+        const govtTotal = gstVal + stampDuty + registration + legal + tdsVal + cessVal;
+
+        let customTotal = 0;
+        document.querySelectorAll('.dynamic-fee').forEach(input => {
+            customTotal += parseFloat(input.value.toString().replace(/,/g, '')) || 0;
+        });
+
+        const finalFlatCost = agg + govtTotal + customTotal;
+
+        document.getElementById('out-govt').innerText = formatCurrency(govtTotal);
+        document.getElementById('out-custom').innerText = formatCurrency(customTotal);
+        document.getElementById('out-total').innerText = formatCurrency(finalFlatCost);
+    }
+
+    // ==========================================
+    // MODULE 2: FUZZY PAYMENT MATRIX
+    // ==========================================
+    const defaultMatrix = [
+        { name: "Token / Booking", pct: 10 },
+        { name: "Plinth / Foundation", pct: 15 },
+        { name: "Slabs Completion", pct: 25 },
+        { name: "Brickwork & Plaster", pct: 20 },
+        { name: "Possession", pct: 30 }
+    ];
+
+    function initMatrix() {
+        const container = document.getElementById('matrix-rows-container');
+        container.innerHTML = '';
+        defaultMatrix.forEach(row => addMatrixRow(row.name, row.pct));
+    }
+
+    function addMatrixRow(nameVal, pctVal) {
+        const container = document.getElementById('matrix-rows-container');
+        const row = document.createElement('div');
+        row.className = "matrix-row-grid matrix-entry";
+        
+        row.innerHTML = `
+            <input type="text" class="calc-in-mgc mat-name" value="${nameVal}" placeholder="Milestone" onkeyup="computeMatrix()">
+            <input type="number" class="calc-in-mgc mat-pct" value="${pctVal}" placeholder="%" onkeyup="computeMatrix()">
+            <span class="mat-amt" style="color:#ccc; font-family:'JetBrains Mono'; font-size:11px; text-align:right;">₹ 0</span>
+            <button class="remove-mgc" onclick="this.parentElement.remove(); computeMatrix();" tabindex="-1" title="Delete Row">[✖]</button>
+        `;
+        container.appendChild(row);
+        computeMatrix();
+    }
+
+    function computeMatrix() {
+        const agg = getRaw('matrix-val-agg');
+
+        let totalPct = 0;
+        const pctInputs = document.querySelectorAll('.mat-pct');
+
+        document.querySelectorAll('.matrix-entry').forEach(row => {
+            const pct = parseFloat(row.querySelector('.mat-pct').value) || 0;
+            totalPct += pct;
+            const amt = agg * (pct / 100);
+            row.querySelector('.mat-amt').innerText = formatCurrency(amt);
+        });
+
+        const pctEl = document.getElementById('matrix-total-pct');
+        const displayPct = Math.round(totalPct * 100) / 100;
+        pctEl.innerText = displayPct + "%";
+        
+        if (Math.abs(totalPct - 100) > 0.01) {
+            pctEl.style.color = "var(--red)";
+            pctEl.style.textShadow = "0 0 8px var(--red)";
+            pctInputs.forEach(inp => inp.classList.add('pct-error'));
+        } else {
+            pctEl.style.color = "var(--green)";
+            pctEl.style.textShadow = "0 0 8px var(--green)";
+            pctInputs.forEach(inp => inp.classList.remove('pct-error'));
+        }
+    }
+
+    // ==========================================
+    // "SUPER AI" LASER-TARGETED SCANNER (XLSX/PDF)
+    // PRESERVED EXACTLY AS REQUESTED
+    // ==========================================
+    async function importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const ext = file.name.split('.').pop().toLowerCase();
+        updateHumorOverride(`Extracting Milestones from ${ext.toUpperCase()}...`);
+        if (ext === 'pdf') await parsePDF(file);
+        else parseExcel(file);
+        event.target.value = ''; 
+    }
+
+    async function parsePDF(file) {
+        const fileReader = new FileReader();
+        fileReader.onload = async function() {
+            try {
+                const typedarray = new Uint8Array(this.result);
+                const pdf = await pdfjsLib.getDocument({data: typedarray}).promise;
+                let fullText = "";
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    fullText += textContent.items.map(item => item.str).join(' ').replace(/\s+/g, ' ') + " ";
+                }
+                const regex = /([0-9A-Za-z][A-Za-z0-9\s\/\&\-\.\,]{2,40}?)\s+(\d{1,3}(?:\.\d+)?)\s*%/g;
+                let match;
+                let tempRows = [];
+                while ((match = regex.exec(fullText)) !== null) {
+                    let name = match[1].trim();
+                    let pct = parseFloat(match[2]);
+                    if(name.length >= 2 && pct > 0 && pct <= 100 && !name.toLowerCase().includes("flat cost") && !name.toLowerCase().includes("balance")) {
+                        const words = name.split(' ');
+                        if(words.length > 6) name = words.slice(-6).join(' '); 
+                        tempRows.push({name, pct});
+                    }
+                }
+                if(tempRows.length > 0) {
+                    document.getElementById('matrix-rows-container').innerHTML = '';
+                    tempRows.forEach(r => addMatrixRow(r.name, r.pct));
+                    updateHumorOverride("PDF Extraction Complete. Verify 100% logic.");
+                } else { alert("PDF SCAN FAILED: Standard format not detected."); updateHumorOverride("Scan Failed.", true); }
+            } catch(e) { alert("CRITICAL ERROR: PDF Engine could not decode document."); updateHumorOverride("Engine Error.", true); }
+        };
+        fileReader.readAsArrayBuffer(file);
+    }
+
+    function parseExcel(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(sheet, {header: 1});
+                let found = false;
+                const tempRows = [];
+                json.forEach(row => {
+                    try {
+                        if(row && row.length >= 2 && row[0] != null && row[1] != null) {
+                            const colA = String(row[0]).trim();
+                            let colB = String(row[1]).trim();
+                            if(colA.length > 2 && !colA.toLowerCase().includes("milestone") && !colA.toLowerCase().includes("flat cost") && !colA.toLowerCase().includes("balance")) {
+                                let parsedPct = parseFloat(colB.replace(/[^0-9.]/g, ''));
+                                if(!isNaN(parsedPct) && parsedPct > 0) {
+                                    if(parsedPct <= 1 && colB.includes('.')) parsedPct = parsedPct * 100;
+                                    if(parsedPct <= 100) {
+                                        parsedPct = Math.round(parsedPct * 100) / 100;
+                                        tempRows.push({name: colA, pct: parsedPct});
+                                        found = true;
+                                    }
+                                }
+                            }
+                        }
+                    } catch(innerErr) {} 
+                });
+                if(found) {
+                    document.getElementById('matrix-rows-container').innerHTML = '';
+                    tempRows.forEach(r => addMatrixRow(r.name, r.pct));
+                    updateHumorOverride("Excel Extraction Complete. Verify 100% logic.");
+                } else { alert("EXCEL SCAN FAILED: Could not find data."); updateHumorOverride("Scan Failed.", true); }
+            } catch(err) { alert("CRITICAL ERROR: Spreadsheet format rejected."); updateHumorOverride("Engine Error.", true); }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    // ==========================================
+    // MODULE 3 & 4: AREA & EMI LOGIC
+    // ==========================================
+    function computeArea() {
+        const sqft = getRaw('area-sqft');
+        const rate = getRaw('area-rate');
+        const amen = getRaw('area-amen');
+        const totalAreaVal = (sqft * rate) + amen;
+        document.getElementById('out-area-val').innerText = formatCurrency(totalAreaVal);
+        document.getElementById('out-area-val').dataset.raw = totalAreaVal;
+    }
+
+    function pushToFlow() {
+        const rawVal = document.getElementById('out-area-val').dataset.raw || 0;
+        if(rawVal > 0) {
+            document.getElementById('val-agg').value = parseFloat(rawVal).toLocaleString('en-IN');
+            switchTab('flow');
+            computeFlow(); syncAcrossTabs();
+            updateHumorOverride("Geometry synced with capital flow.");
+        }
+    }
+
+    function syncLoanSource() {
+        const src = document.querySelector('input[name="loan-src"]:checked').value;
+        const propInp = document.getElementById('loan-prop');
+        
+        if (src === 'cap-agg') {
+            propInp.value = document.getElementById('val-agg').value;
+        } else if (src === 'cap-tot') {
+            const totStr = document.getElementById('out-total').innerText.replace(/[^\d.]/g, '');
+            propInp.value = parseFloat(totStr || 0).toLocaleString('en-IN');
+        } else if (src === 'area') {
+            const areaVal = document.getElementById('out-area-val').dataset.raw || 0;
+            propInp.value = parseFloat(areaVal).toLocaleString('en-IN');
+        }
+        computeEMI();
+    }
+
+    function customLoanInput() {
+        document.querySelector('input[name="loan-src"][value="custom"]').checked = true;
+        computeEMI();
+    }
+
+    function computeEMI() {
+        const propVal = getRaw('loan-prop');
+        const dpPercent = getRaw('loan-dp-p');
+        const intRate = getRaw('loan-int');
+        const years = getRaw('loan-yrs');
+
+        const downPayment = propVal * (dpPercent / 100);
+        const loanAmt = propVal - downPayment;
+
+        document.getElementById('out-dp-amt').innerText = formatCurrency(downPayment);
+        document.getElementById('out-loan-amt').innerText = formatCurrency(loanAmt);
+
+        let emi = 0;
+        let totalInterest = 0;
+        let totalRepayment = 0;
+
+        if (loanAmt > 0 && intRate > 0 && years > 0) {
+            const monthlyRate = (intRate / 12) / 100;
+            const months = years * 12;
+            emi = loanAmt * monthlyRate * Math.pow(1 + monthlyRate, months) / (Math.pow(1 + monthlyRate, months) - 1);
+            totalRepayment = emi * months;
+            totalInterest = totalRepayment - loanAmt;
+        }
+
+        document.getElementById('out-emi').innerText = formatCurrency(emi);
+        document.getElementById('out-tot-int').innerText = formatCurrency(totalInterest);
+        document.getElementById('out-tot-pay').innerText = formatCurrency(totalRepayment);
+    }
+
+    // ==========================================
+    // EXPORT ENGINE (DARK MODE FIXES ONLY)
+    // ==========================================
+    function openExportModal() { document.getElementById('export-modal').style.display = 'flex'; }
+    function closeExportModal() { document.getElementById('export-modal').style.display = 'none'; }
+
+    function sanitizeForPDF(str) {
+        if(!str) return "";
+        return str.toString().replace(/₹/g, 'Rs.');
+    }
+
+    function getSafeDateStr() {
+        const d = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
+    }
+
+    function getDisplayDateStr() {
+        const d = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+
+    function getExportData() {
+        const data = {};
+        if (document.getElementById('chk-flow').checked) {
+            data.flow = [
+                ["Agreement Value", formatCurrency(getRaw('val-agg'))],
+                ["GST", (document.getElementById('val-gst-p').value || "0") + "%"],
+                ["Stamp Duty", (document.getElementById('val-sd-p').value || "0") + "%"],
+                ["Registration", (document.getElementById('val-reg-p').value || "0") + "% (Max 30K)"],
+                ["Legal & Docs", formatCurrency(getRaw('val-legal'))]
+            ];
+            if(getRaw('val-agg') >= 5000000) data.flow.push(["TDS (>50L)", document.getElementById('val-tds-p').value + "%"]);
+            if(getRaw('val-agg') >= 10000000) data.flow.push(["Metro Cess (>1Cr)", document.getElementById('val-cess-p').value + "%"]);
+
+            document.querySelectorAll('.dynamic-fee').forEach(input => {
+                data.flow.push([input.dataset.label || "Other Charge", formatCurrency(parseFloat(input.value.replace(/,/g, '')) || 0)]);
+            });
+
+            data.flow.push(["GOVT TAXES & LEGAL", document.getElementById('out-govt').innerText]);
+            data.flow.push(["OTHER CHARGES", document.getElementById('out-custom').innerText]);
+            data.flow.push(["TOTAL FLAT COST", document.getElementById('out-total').innerText]);
+        }
+
+        if (document.getElementById('chk-area').checked) {
+            data.area = [
+                ["Total Sq.Ft", getRaw('area-sqft')],
+                ["Rate Per Sq.Ft", formatCurrency(getRaw('area-rate'))],
+                ["Parking/Amenities", formatCurrency(getRaw('area-amen'))],
+                ["BASE AGREEMENT VALUE", document.getElementById('out-area-val').innerText]
+            ];
+        }
+
+        if (document.getElementById('chk-matrix').checked) {
+            data.matrix = [];
+            document.querySelectorAll('.matrix-entry').forEach(row => {
+                const name = row.querySelector('.mat-name').value;
+                const pct = (row.querySelector('.mat-pct').value || "0") + "%";
+                const amt = row.querySelector('.mat-amt').innerText;
+                data.matrix.push([name, pct, amt]);
+            });
+            data.matrix.push(["TOTAL (" + document.getElementById('matrix-total-pct').innerText + ")", "", formatCurrency(getRaw('matrix-val-agg'))]);
+        }
+
+        if (document.getElementById('chk-loan').checked) {
+            data.loan = [
+                ["Property Value", formatCurrency(getRaw('loan-prop'))],
+                ["Downpayment (" + (document.getElementById('loan-dp-p').value || "0") + "%)", document.getElementById('out-dp-amt').innerText],
+                ["Principal Loan", document.getElementById('out-loan-amt').innerText],
+                ["Interest Rate / Tenure", document.getElementById('loan-int').value + "% for " + document.getElementById('loan-yrs').value + " Yrs"],
+                ["Total Interest Payable", document.getElementById('out-tot-int').innerText],
+                ["MONTHLY EMI", document.getElementById('out-emi').innerText],
+                ["TOTAL REPAYMENT", document.getElementById('out-tot-pay').innerText]
+            ];
+        }
+        return data;
+    }
+
+    function executeExport(type) {
+        updateHumorOverride("Compiling report payload...");
+        const data = getExportData();
+        const dateStr = getDisplayDateStr(); 
+        const safeNameExt = getSafeDateStr();
+
+        if (type === 'excel') {
+            let ws_data = [
+                ["CAPITAL FLOW ENGINE REPORT", "", ""],
+                ["SYSTEM ARCHITECTURE // mgcryan v0.0.0.1", "", ""],
+                ["EXPORTED & CREATED BY // " + activeUser.toUpperCase(), "", ""],
+                ["GENERATED // " + dateStr, "", ""],
+                ["", "", ""]
+            ];
+
+            if(data.flow) { ws_data.push(["--- CAPITAL FLOW ---", ""]); ws_data = ws_data.concat(data.flow); ws_data.push(["", ""]); }
+            if(data.area) { ws_data.push(["--- AREA ENGINE ---", ""]); ws_data = ws_data.concat(data.area); ws_data.push(["", ""]); }
+            if(data.matrix) { ws_data.push(["--- PAYMENT MATRIX ---", "", ""]); ws_data.push(["Milestone", "Percentage", "Amount"]); ws_data = ws_data.concat(data.matrix); ws_data.push(["", "", ""]); }
+            if(data.loan) { ws_data.push(["--- MORTGAGE ESTIMATOR ---", ""]); ws_data = ws_data.concat(data.loan); }
+            
+            ws_data.push(["", ""]);
+            ws_data.push(["DISCLAIMER: System generated estimate for informational purposes. Subject to verification.", ""]);
+
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            ws['!cols'] = [{wch: 35}, {wch: 20}, {wch: 25}]; 
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "MGC_Report");
+            XLSX.writeFile(wb, `mgcryan_Capital_Flow_${safeNameExt}.xlsx`);
+        } 
+        else if (type === 'pdf') {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            const hour = new Date().getHours();
+            let isNight = hour >= 18 || hour < 6;
+
+            const themeChoice = document.querySelector('input[name="pdf-theme"]:checked').value;
+            if (themeChoice === 'dark') isNight = true;
+            else if (themeChoice === 'light') isNight = false;
+
+            // FIX: Perfecting the Dark Mode PDF Colors & Eliminating Background Overlap
+            const bgFill = isNight ? [5, 10, 20] : [255, 255, 255];
+            const titleColor = isNight ? [0, 212, 255] : [0, 115, 230];
+            const txtColor = isNight ? [180, 180, 180] : [100, 100, 100];
+            
+            const headFillFlow = isNight ? [15, 25, 45] : [0, 115, 230];
+            const headTxtFlow = isNight ? [0, 212, 255] : [255, 255, 255]; 
+            
+            const headFillArea = isNight ? [15, 25, 45] : [0, 212, 255];
+            const headTxtArea = isNight ? [0, 230, 118] : [255, 255, 255]; 
+            
+            const headFillLoan = isNight ? [15, 25, 45] : [255, 42, 85];
+            const headTxtLoan = isNight ? [255, 42, 85] : [255, 255, 255]; 
+            
+            const headFillMatrix = isNight ? [15, 25, 45] : [244, 208, 63];
+            const headTxtMatrix = isNight ? [244, 208, 63] : [0, 0, 0]; 
+            
+            const altRow = isNight ? [12, 18, 32] : [248, 248, 248];
+            const gridLine = isNight ? [30, 60, 100] : [220, 220, 220]; 
+            const bodyTxt = isNight ? [230, 230, 230] : [40, 40, 40];
+
+            // Set to track painted pages so we don't paint over tables
+            const paintedPages = new Set([1]); 
+            const pageBgHook = function(data) {
+                if(isNight && !paintedPages.has(data.pageNumber)) { 
+                    doc.setFillColor(...bgFill); 
+                    doc.rect(0, 0, doc.internal.pageSize.width, doc.internal.pageSize.height, 'F'); 
+                    paintedPages.add(data.pageNumber);
+                }
+            };
+
+            // Paint first page background
+            if(isNight) { doc.setFillColor(...bgFill); doc.rect(0, 0, doc.internal.pageSize.width, doc.internal.pageSize.height, 'F'); }
+
+            doc.setFontSize(14);
+            doc.setTextColor(...titleColor);
+            doc.text("CAPITAL FLOW ENGINE REPORT", 14, 18);
+            
+            doc.setFontSize(7);
+            doc.setTextColor(...txtColor);
+            doc.text("SYSTEM ARCHITECTURE // mgcryan v0.0.0.1", 14, 24);
+            doc.text("EXPORTED & CREATED BY // " + activeUser.toUpperCase(), 14, 28);
+            doc.text("GENERATED // " + dateStr, 14, 32);
+
+            let currentY = 38;
+            
+            const tableConfig = {
+                theme: 'grid',
+                bodyStyles: { fontSize: 7, cellPadding: 1.5 },
+                alternateRowStyles: { fillColor: altRow },
+                styles: { textColor: bodyTxt, lineColor: gridLine, fillColor: bgFill },
+                willDrawPage: pageBgHook,
+                margin: { left: 14, right: 14 }
+            };
+
+            const mapSafePDF = (arr) => arr.map(row => row.map(cell => sanitizeForPDF(cell)));
+
+            if(data.flow) {
+                doc.autoTable({ ...tableConfig, startY: currentY, head: [['Capital Flow', 'Value']], body: mapSafePDF(data.flow), headStyles: { fillColor: headFillFlow, textColor: headTxtFlow, fontSize: 8, cellPadding: 1.5, minCellHeight: 6 }, columnStyles: { 1: { halign: 'right' } } });
+                currentY = doc.lastAutoTable.finalY + 4;
+            }
+            if(data.area) {
+                if(currentY > 260) { 
+                    doc.addPage(); currentY = 15; 
+                    if(isNight) { doc.setFillColor(...bgFill); doc.rect(0, 0, doc.internal.pageSize.width, doc.internal.pageSize.height, 'F'); paintedPages.add(doc.internal.getNumberOfPages()); } 
+                }
+                doc.autoTable({ ...tableConfig, startY: currentY, head: [['Area Engine', 'Value']], body: mapSafePDF(data.area), headStyles: { fillColor: headFillArea, textColor: headTxtArea, fontSize: 8, cellPadding: 1.5 }, columnStyles: { 1: { halign: 'right' } } });
+                currentY = doc.lastAutoTable.finalY + 4;
+            }
+            if(data.loan) {
+                if(currentY > 260) { 
+                    doc.addPage(); currentY = 15; 
+                    if(isNight) { doc.setFillColor(...bgFill); doc.rect(0, 0, doc.internal.pageSize.width, doc.internal.pageSize.height, 'F'); paintedPages.add(doc.internal.getNumberOfPages()); } 
+                }
+                doc.autoTable({ ...tableConfig, startY: currentY, head: [['Mortgage Estimator', 'Value']], body: mapSafePDF(data.loan), headStyles: { fillColor: headFillLoan, textColor: headTxtLoan, fontSize: 8, cellPadding: 1.5 }, columnStyles: { 1: { halign: 'right' } } });
+                currentY = doc.lastAutoTable.finalY + 4;
+            }
+            if(data.matrix) {
+                if(currentY > 220) { 
+                    doc.addPage(); currentY = 15; 
+                    if(isNight) { doc.setFillColor(...bgFill); doc.rect(0, 0, doc.internal.pageSize.width, doc.internal.pageSize.height, 'F'); paintedPages.add(doc.internal.getNumberOfPages()); } 
+                }
+                doc.autoTable({ ...tableConfig, startY: currentY, head: [['Payment Matrix', 'Percentage', 'Amount']], body: mapSafePDF(data.matrix), headStyles: { fillColor: headFillMatrix, textColor: headTxtMatrix, fontSize: 8, cellPadding: 1.5 }, columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' } } });
+                currentY = doc.lastAutoTable.finalY + 10;
+            }
+
+            doc.setFontSize(7);
+            doc.setTextColor(150, 150, 150);
+            const disclaimer = "DISCLAIMER: This system-generated estimate is for informational purposes only and is subject to official verification. Generated via mgcryan v0.0.0.1 architecture.";
+            const pageHeight = doc.internal.pageSize.height;
+            if(currentY > pageHeight - 15) { 
+                doc.addPage(); currentY = 20; 
+                if(isNight) { doc.setFillColor(...bgFill); doc.rect(0, 0, doc.internal.pageSize.width, pageHeight, 'F'); paintedPages.add(doc.internal.getNumberOfPages()); } 
+            }
+            doc.text(disclaimer, 14, currentY);
+
+            doc.save(`mgcryan_Capital_Flow_${safeNameExt}.pdf`);
+        }
+        closeExportModal();
+    }
+</script>
+</body>
+</html>
