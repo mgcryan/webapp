@@ -308,25 +308,38 @@
     </div>
 
 <script>
-    // --- LOCAL STORAGE SECURITY PROTOCOL ---
+   // --- STRICT SESSION LOCK PROTOCOL ---
     const sysCrypt = {
         unlock: (str) => { try { return JSON.parse(decodeURIComponent(escape(atob(str)))); } catch(e){ return null; } }
     };
 
-    let activeUser = "AUTHORIZED ADMIN";
+    let activeUser = "UNKNOWN";
     let currentTab = 'flow';
 
     window.onload = () => {
-        try {
-            const encSession = sessionStorage.getItem('mgc_secure');
-            if (encSession) {
-                const sessionData = sysCrypt.unlock(encSession);
-                if(sessionData && (sessionData.username || sessionData.user || sessionData.name)) {
-                    activeUser = sessionData.username || sessionData.user || sessionData.name;
-                }
-            }
-        } catch(e) { console.warn("Local testing active."); }
+        // 1. Grab encrypted token from index.html login
+        const encSession = sessionStorage.getItem('mgc_secure');
+        
+        // 2. If no token exists, lock the page and kick to index
+        if (!encSession) {
+            alert("SECURITY BREACH: Unauthorized Access. Redirecting to terminal.");
+            window.location.replace("index.html");
+            return;
+        }
 
+        // 3. Decrypt and validate payload
+        const sessionData = sysCrypt.unlock(encSession);
+        if (!sessionData || !(sessionData.username || sessionData.user || sessionData.name)) {
+            alert("SECURITY BREACH: Invalid Session Data. Redirecting.");
+            sessionStorage.removeItem('mgc_secure'); // Purge corrupted token
+            window.location.replace("index.html");
+            return;
+        }
+
+        // 4. Assign dynamic user for PDF/Excel exports
+        activeUser = sessionData.username || sessionData.user || sessionData.name;
+
+        // --- CONTINUE NORMAL PAGE INITIALIZATION ---
         initMatrix();
         
         try {
@@ -337,7 +350,6 @@
         cycleHumor();
         setInterval(cycleHumor, 4500);
     };
-
     // --- GLOBAL ENTER KEY NAVIGATION ---
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
@@ -1034,3 +1046,4 @@
 </body>
 
 </html>
+
