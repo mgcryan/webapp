@@ -14,18 +14,20 @@
 
     <style>
         :root { --blue: #00d4ff; --dark: #050a14; --red: #ff2a55; --green: #00e676; --grey: #444; --gold: #f4d03f; --glass: rgba(8, 12, 22, 0.85); }
-        body { background: var(--dark); font-family: 'Inter', sans-serif; color: #e0e0e0; margin: 0; height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        * { box-sizing: border-box; }
+        body { background: var(--dark); font-family: 'Inter', sans-serif; color: #e0e0e0; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; overflow-x: hidden; }
         
         #matrix-bg { position: fixed; inset: 0; z-index: 1; opacity: 0.15; pointer-events: none; }
         
         /* SCI-FI UI ENHANCEMENTS */
         .glass-panel { 
             background: var(--glass); border: 1px solid rgba(0, 212, 255, 0.2); backdrop-filter: blur(20px); 
-            padding: 25px; width: 95%; max-width: 550px; max-height: 90vh; overflow-y: auto; overflow-x: hidden;
-            z-index: 10; position: relative; border-radius: 12px; 
+            padding: 25px; width: 100%; max-width: 550px; max-height: 90vh; overflow-y: auto; overflow-x: hidden;
+            z-index: 10; position: relative; border-radius: 12px; margin: auto;
             box-shadow: 0 0 30px rgba(0,0,0,0.9), inset 0 0 20px rgba(0, 212, 255, 0.05); 
         }
 
+        /* LIVE FLOWING LIGHT DESIGN */
         .flow-light {
             position: absolute; top: 0; left: 0; right: 0; height: 3px;
             background: linear-gradient(90deg, rgba(0,212,255,0) 0%, rgba(0,212,255,1) 40%, rgba(0,230,118,1) 60%, rgba(0,212,255,0) 100%);
@@ -41,12 +43,12 @@
         .nav-back { color: #aaa; font-size: 11px; cursor: pointer; text-decoration: none; display: inline-block; font-family: 'JetBrains Mono'; transition: 0.3s; padding: 4px 8px; border: 1px solid transparent; border-radius: 4px; }
         .nav-back:hover { color: #fff; border-color: #555; background: rgba(255,255,255,0.05); text-shadow: 0 0 8px #fff; }
 
-        .calc-lbl { font-size: 10px; color: #888; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.5px; display:flex; align-items:center; }
+        .calc-lbl { font-size: 10px; color: #888; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.5px; display:flex; align-items:center; flex-wrap: wrap; }
         .calc-in-mgc { 
             width: 100%; padding: 10px 12px; margin-bottom: 0 !important;
             background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(0, 212, 255, 0.1); border-left: 2px solid rgba(0, 212, 255, 0.3);
             color: #fff; font-family: 'JetBrains Mono', monospace; 
-            font-size: 12px; outline: none; border-radius: 4px; transition: 0.3s; box-sizing: border-box;
+            font-size: 12px; outline: none; border-radius: 4px; transition: 0.3s;
         }
         .calc-in-mgc:focus { border-color: var(--blue); border-left-width: 4px; background: rgba(0, 212, 255, 0.05); box-shadow: 0 0 15px rgba(0, 212, 255, 0.15); }
         
@@ -59,7 +61,7 @@
         .remove-mgc { background:transparent; border:none; color:var(--red); cursor:pointer; font-size:12px; margin-left:5px; opacity:0.5; transition:0.3s; padding: 2px; }
         .remove-mgc:hover { opacity:1; text-shadow: 0 0 8px var(--red); transform: scale(1.2); }
 
-        .tab-bar { display: flex; border-bottom: 1px solid rgba(0, 212, 255, 0.2); margin-bottom: 20px; overflow-x: auto; scrollbar-width: none; white-space: nowrap; padding-bottom: 5px; }
+        .tab-bar { display: flex; border-bottom: 1px solid rgba(0, 212, 255, 0.2); margin-bottom: 20px; overflow-x: auto; scrollbar-width: none; white-space: nowrap; padding-bottom: 5px; -webkit-overflow-scrolling: touch; }
         .tab-bar::-webkit-scrollbar { display: none; }
         .db-tab { padding: 10px 15px; font-size: 10px; color: #888; cursor: pointer; border-bottom: 2px solid transparent; font-weight: bold; text-transform: uppercase; font-family:'JetBrains Mono'; transition:0.3s; flex-shrink: 0; }
         .db-tab:hover { color: #fff; background: rgba(255,255,255,0.03); border-radius: 4px 4px 0 0; }
@@ -67,23 +69,39 @@
         .tab-content { display: none; flex-direction: column; animation: fadeIn 0.3s ease-in-out;}
         .content-active { display: flex; }
 
-        .hnw-badge { background: rgba(255,42,85,0.1); border: 1px solid var(--red); color: var(--red); font-size: 8px; padding: 2px 4px; border-radius: 2px; margin-left: 5px; animation: pulseRed 2s infinite; }
+        .hnw-badge { background: rgba(255,42,85,0.1); border: 1px solid var(--red); color: var(--red); font-size: 8px; padding: 2px 4px; border-radius: 2px; margin-left: 5px; animation: pulseRed 2s infinite; white-space: nowrap; }
         
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; align-items: center; justify-content: center; padding: 15px; box-sizing: border-box; backdrop-filter: blur(5px); }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; align-items: center; justify-content: center; padding: 15px; backdrop-filter: blur(5px); }
         
         .export-chk-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; background: rgba(0,212,255,0.05); padding: 10px; border-radius: 4px; border: 1px solid rgba(0,212,255,0.15); transition: 0.3s; }
         .export-chk-wrap:hover { background: rgba(0,212,255,0.1); border-color: var(--blue); }
-        .export-chk-wrap input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--blue); cursor: pointer; }
+        .export-chk-wrap input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--blue); cursor: pointer; flex-shrink: 0; }
         .export-chk-wrap label { color: #fff; font-size: 11px; font-family: 'JetBrains Mono'; cursor: pointer; width: 100%; }
 
         .calc-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 12px; align-items: center; }
         .matrix-row-grid { display: grid; grid-template-columns: 2.5fr 1fr 1.5fr 20px; gap: 8px; margin-bottom: 8px; align-items: center; }
+        .matrix-row-grid > * { min-width: 0; } 
 
+        /* ABSOLUTE MOBILE RESPONSIVENESS FIX */
         @media (max-width: 600px) { 
-            .glass-panel { padding: 15px; } 
+            body { align-items: flex-start; padding: 10px; height: auto; display: block; overflow-y: auto; }
+            .glass-panel { max-height: none; width: 100%; margin: 0 auto; overflow: visible; padding: 20px 15px; } 
             .calc-grid { grid-template-columns: 1fr; gap: 8px; }
-            .calc-lbl { margin-top: 4px; }
-            .matrix-row-grid { grid-template-columns: 2fr 1fr 1.5fr 20px; gap: 5px; }
+            .calc-lbl { margin-top: 6px; font-size: 9px; }
+            .matrix-row-grid { grid-template-columns: 2fr 1fr 1.5fr 20px; gap: 6px; }
+            .calc-in-mgc { font-size: 11px; padding: 8px 10px; }
+            .btn-small { padding: 6px 12px; font-size: 9px; }
+            .tab-bar { padding-bottom: 2px; margin-bottom: 15px; }
+            .db-tab { padding: 8px 12px; font-size: 9px; }
+        }
+
+        @media (max-width: 400px) {
+            .matrix-row-grid { grid-template-columns: 1.8fr 1fr 1.5fr 20px; gap: 4px; }
+            .calc-in-mgc { font-size: 10px; padding: 6px 8px; }
+            .calc-lbl { font-size: 8px; }
+            .mat-amt { font-size: 9px !important; }
+            .glass-panel { padding: 15px 12px; }
+            .btn-small { padding: 6px 8px; }
         }
 
         @keyframes pulseRed { 0% { opacity: 0.7; } 50% { opacity: 1; box-shadow: 0 0 5px var(--red); } 100% { opacity: 0.7; } }
@@ -106,7 +124,7 @@
                 <h3 style="color:#fff; letter-spacing:2px; font-size:14px; margin:0 0 5px 0; font-family:'Inter', sans-serif; text-shadow: 0 0 10px rgba(0,212,255,0.5);">🔹 CAPITAL FLOW ENGINE</h3>
                 <span style="font-size:9px; color:var(--blue); font-family:'JetBrains Mono'; font-weight:bold; letter-spacing: 1px;">mgcryan v0.0.0.1 // ONLINE</span>
             </div>
-            <div style="display: flex; gap: 10px; align-items: center;">
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                 <button onclick="openExportModal()" class="btn-small" style="color:var(--green); border-color:var(--green); box-shadow: inset 0 0 5px rgba(0,230,118,0.2);">[ EXPORT REPORT ]</button>
                 <a href="javascript:history.back()" class="nav-back">← RETURN</a>
             </div>
@@ -117,12 +135,13 @@
             <div class="db-tab" onclick="switchTab('area')">Area Engine</div>
             <div class="db-tab" onclick="switchTab('matrix')">Payment Matrix</div>
             <div class="db-tab" onclick="switchTab('loan')">Mortgage</div>
+            <div class="db-tab" onclick="switchTab('reverse')" style="color:var(--gold);">ReCal</div>
         </div>
 
         <div id="tab-flow" class="tab-content content-active">
             <div id="calc-grid" class="calc-grid">
                 <label class="calc-lbl">AGREEMENT VALUE</label>
-                <input type="text" id="val-agg" placeholder="e.g. 44,44,444" onkeyup="computeFlow(); syncAcrossTabs();" class="calc-in-mgc" style="border-color:var(--gold); border-left-color:var(--gold);">
+                <input type="text" id="val-agg" placeholder="e.g. 32,50,000" onkeyup="computeFlow(); syncAcrossTabs();" class="calc-in-mgc" style="border-color:var(--gold); border-left-color:var(--gold);">
 
                 <label class="calc-lbl" style="width:100%;">GST (%) <span id="lbl-amt-gst" style="margin-left:auto; color:var(--green); font-weight:bold;"></span></label>
                 <input type="number" id="val-gst-p" placeholder="%" onkeyup="computeFlow()" class="calc-in-mgc">
@@ -167,13 +186,13 @@
         <div id="tab-area" class="tab-content">
             <div class="calc-grid">
                 <label class="calc-lbl">TOTAL SQ.FT AREA</label>
-                <input type="text" id="area-sqft" placeholder="e.g. 786" onkeyup="computeArea()" class="calc-in-mgc">
+                <input type="text" id="area-sqft" placeholder="e.g. 650" onkeyup="computeArea()" class="calc-in-mgc">
 
                 <label class="calc-lbl">RATE PER SQ.FT (₹)</label>
-                <input type="text" id="area-rate" placeholder="e.g. 4,444" onkeyup="computeArea()" class="calc-in-mgc">
+                <input type="text" id="area-rate" placeholder="e.g. 5,000" onkeyup="computeArea()" class="calc-in-mgc">
 
                 <label class="calc-lbl">PARKING / AMENITIES</label>
-                <input type="text" id="area-amen" placeholder="Fixed Amount" onkeyup="computeArea()" class="calc-in-mgc">
+                <input type="text" id="area-amen" placeholder="Fixed amount" onkeyup="computeArea()" class="calc-in-mgc">
             </div>
 
             <div style="margin-top: 20px; padding: 15px; background: rgba(0, 0, 0, 0.4); border-radius:4px; border: 1px solid rgba(255,255,255,0.1); border-left: 4px solid var(--gold);">
@@ -188,9 +207,9 @@
 
         <div id="tab-matrix" class="tab-content">
             <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center; gap: 10px; flex-wrap: wrap;">
-                <div style="flex-grow: 1;">
+                <div style="flex-grow: 1; min-width: 150px;">
                     <label class="calc-lbl" style="margin-bottom: 5px; color:var(--gold);">BASE VALUE (EDITABLE)</label>
-                    <input type="text" id="matrix-val-agg" placeholder="0.00" onkeyup="computeMatrix()" class="calc-in-mgc" style="width:100%; max-width: 200px; padding: 8px; border-color:var(--gold); border-left-color:var(--gold);">
+                    <input type="text" id="matrix-val-agg" placeholder="0.00" onkeyup="computeMatrix()" class="calc-in-mgc" style="width:100%; padding: 8px; border-color:var(--gold); border-left-color:var(--gold);">
                 </div>
                 <div style="font-size:10px; font-family:'JetBrains Mono'; text-align: right; background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 4px; border: 1px solid #333;">
                     MATRIX VALIDATION <br><span id="matrix-total-pct" style="color:var(--green); font-weight:bold; transition: 0.3s; font-size:16px; text-shadow: 0 0 8px var(--green);">100%</span>
@@ -262,6 +281,51 @@
             </div>
         </div>
 
+        <div id="tab-reverse" class="tab-content">
+            <div id="rev-calc-grid" class="calc-grid">
+                <label class="calc-lbl" style="color:var(--green);">TARGET TOTAL COST</label>
+                <input type="text" id="rev-total" placeholder="e.g. 17,80,000" onkeyup="computeReverse()" class="calc-in-mgc" style="border-color:var(--green); border-left-color:var(--green);">
+
+                <label class="calc-lbl" style="width:100%;">GST (%)</label>
+                <input type="number" id="rev-gst-p" placeholder="%" onkeyup="computeReverse()" class="calc-in-mgc">
+
+                <label class="calc-lbl" style="width:100%;">STAMP DUTY (%)</label>
+                <input type="number" id="rev-sd-p" placeholder="%" onkeyup="computeReverse()" class="calc-in-mgc">
+
+                <label class="calc-lbl" style="width:100%;">REGISTRATION (%) <span style="color:var(--red); font-size:8px; margin-left:5px;">[Auto 30K Cap]</span></label>
+                <input type="number" id="rev-reg-p" placeholder="%" onkeyup="computeReverse()" class="calc-in-mgc">
+
+                <label class="calc-lbl">LEGAL & DOCS (Fixed)</label>
+                <input type="text" id="rev-legal" placeholder="0.00" onkeyup="computeReverse()" class="calc-in-mgc">
+
+                <label id="lbl-rev-tds" class="calc-lbl" style="display:none; color:var(--red); width:100%;">TDS (>50L) <span class="hnw-badge">GOVT MANDATE</span> <span id="lbl-amt-rev-tds" style="margin-left:auto; color:var(--red); font-weight:bold;"></span></label>
+                <input type="number" id="rev-tds-p" value="1" placeholder="%" onkeyup="computeReverse()" class="calc-in-mgc hnw-field" style="display:none; border-color:var(--red); border-left-color:var(--red);">
+
+                <label id="lbl-rev-cess" class="calc-lbl" style="display:none; color:var(--red); width:100%;">METRO CESS (>1Cr) <span class="hnw-badge">SURCHARGE</span> <span id="lbl-amt-rev-cess" style="margin-left:auto; color:var(--red); font-weight:bold;"></span></label>
+                <input type="number" id="rev-cess-p" value="1" placeholder="%" onkeyup="computeReverse()" class="calc-in-mgc hnw-field" style="display:none; border-color:var(--red); border-left-color:var(--red);">
+            </div>
+
+            <div style="margin-top:15px; text-align:right;">
+                <button onclick="addRevCustomField()" class="btn-small" style="color:var(--blue); border-color:var(--blue); font-size:9px; margin-left: auto;">+ OTHER CHARGES</button>
+            </div>
+
+            <div style="margin-top: 20px; padding: 20px; border-top: 1px dashed rgba(0, 212, 255, 0.2); background: rgba(0, 0, 0, 0.4); border-radius:4px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);">
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                    <span style="font-size:10px; color:#aaa; font-family:'JetBrains Mono';">TOTAL GOVT TAXES (Derived):</span>
+                    <span id="out-rev-govt" style="color:var(--red); font-family:'JetBrains Mono'; font-weight:bold;">₹ 0.00</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                    <span style="font-size:10px; color:#aaa; font-family:'JetBrains Mono';">TOTAL OTHER CHARGES:</span>
+                    <span id="out-rev-custom" style="color:var(--blue); font-family:'JetBrains Mono'; font-weight:bold;">₹ 0.00</span>
+                </div>
+
+                <div style="background:rgba(244, 208, 63, 0.08); padding:15px; border-radius:4px; border:1px solid var(--gold); border-left: 4px solid var(--gold); display:flex; justify-content:space-between; align-items:center; box-shadow: 0 0 20px rgba(244, 208, 63, 0.1);">
+                    <span style="font-size:11px; color:#fff; font-weight:bold; letter-spacing:1px; font-family:'JetBrains Mono';">BASE AGREEMENT VALUE:</span>
+                    <span id="out-rev-agg" style="color:var(--gold); font-family:'JetBrains Mono'; font-size:18px; font-weight:800; text-shadow: 0 0 10px rgba(244, 208, 63, 0.5);">₹ 0.00</span>
+                </div>
+            </div>
+        </div>
+
         <div id="calc-humor" style="text-align:center; font-size:9px; color:var(--blue); margin-top:20px; font-family:'JetBrains Mono'; text-transform:uppercase; letter-spacing:1px; min-height: 12px; transition: 0.3s; text-shadow: 0 0 5px rgba(0,212,255,0.3);">
             >> SYSTEM BOOT SEQUENCE INITIATED...
         </div>
@@ -292,10 +356,11 @@
 
             <div style="margin-top: 15px; margin-bottom: 15px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 4px; border: 1px solid #333;">
                 <label style="color:#aaa; font-size:9px; font-family:'JetBrains Mono'; display:block; margin-bottom:8px;">PDF COLOR THEME:</label>
-                <div style="display:flex; gap:15px;">
+                <div style="display:flex; gap:15px; flex-wrap: wrap;">
                     <label style="color:#fff; font-size:10px; font-family:'JetBrains Mono'; cursor:pointer;"><input type="radio" name="pdf-theme" value="auto" checked style="accent-color:var(--blue);"> AUTO</label>
                     <label style="color:#fff; font-size:10px; font-family:'JetBrains Mono'; cursor:pointer;"><input type="radio" name="pdf-theme" value="dark" style="accent-color:var(--blue);"> DARK</label>
                     <label style="color:#fff; font-size:10px; font-family:'JetBrains Mono'; cursor:pointer;"><input type="radio" name="pdf-theme" value="light" style="accent-color:var(--blue);"> LIGHT</label>
+                    <label style="color:#fff; font-size:10px; font-family:'JetBrains Mono'; cursor:pointer;"><input type="radio" name="pdf-theme" value="bw" style="accent-color:var(--grey);"> B&W</label>
                 </div>
             </div>
 
@@ -308,38 +373,42 @@
     </div>
 
 <script>
-   // --- STRICT SESSION LOCK PROTOCOL ---
+    // --- STRICT SESSION LOCK PROTOCOL & USERNAME EXTRACTION ---
     const sysCrypt = {
         unlock: (str) => { try { return JSON.parse(decodeURIComponent(escape(atob(str)))); } catch(e){ return null; } }
     };
 
-    let activeUser = "UNKNOWN";
+    let activeUser = "UNKNOWN ADMIN";
     let currentTab = 'flow';
 
     window.onload = () => {
-        // 1. Grab encrypted token from index.html login
-        const encSession = sessionStorage.getItem('mgc_secure');
-        
-        // 2. If no token exists, lock the page and kick to index
-        if (!encSession) {
-            alert("SECURITY BREACH: Unauthorized Access. Redirecting to terminal.");
+        try {
+            // STRICT SESSION LOCK REDIRECT
+            const encSession = sessionStorage.getItem('mgc_secure');
+            if (!encSession) {
+                alert("SECURITY BREACH: Login First! Redirecting...");
+                window.location.replace("index.html");
+                return;
+            }
+            
+            const sessionData = sysCrypt.unlock(encSession);
+            if (!sessionData || !(sessionData.username || sessionData.user || sessionData.name || sessionData.userid || sessionData.id)) {
+                alert("SECURITY BREACH: Invalid Session. Login First!");
+                sessionStorage.removeItem('mgc_secure');
+                window.location.replace("index.html");
+                return;
+            }
+
+            let u = sessionData.id || sessionData.userid || sessionData.username || sessionData.user || "MGC-000";
+            let n = sessionData.name || sessionData.fullname || "USER";
+            activeUser = `[${u.toUpperCase()}] ${n.toUpperCase()}`;
+
+        } catch(e) { 
+            alert("SECURITY BREACH: Token Error. Login First!");
             window.location.replace("index.html");
             return;
         }
 
-        // 3. Decrypt and validate payload
-        const sessionData = sysCrypt.unlock(encSession);
-        if (!sessionData || !(sessionData.username || sessionData.user || sessionData.name)) {
-            alert("SECURITY BREACH: Invalid Session Data. Redirecting.");
-            sessionStorage.removeItem('mgc_secure'); // Purge corrupted token
-            window.location.replace("index.html");
-            return;
-        }
-
-        // 4. Assign dynamic user for PDF/Excel exports
-        activeUser = sessionData.username || sessionData.user || sessionData.name;
-
-        // --- CONTINUE NORMAL PAGE INITIALIZATION ---
         initMatrix();
         
         try {
@@ -350,6 +419,7 @@
         cycleHumor();
         setInterval(cycleHumor, 4500);
     };
+
     // --- GLOBAL ENTER KEY NAVIGATION ---
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
@@ -473,6 +543,24 @@
             () => { const loan = document.getElementById('out-loan-amt').innerText; return loan !== "₹ 0" ? `Principal of ${loan} is just the appetizer. Interest is the main course.` : `Bypassing underwriter logic...`; },
             () => { const emi = document.getElementById('out-emi').innerText; return emi !== "₹ 0" ? `Output: ${emi} per month. Your future self is crying.` : `Optimizing monthly fiscal bleed...`; },
             () => `Securing mortgage node. Handing over financial independence.`
+        ],
+        reverse: [
+            () => `Deconstructing the final price tag into manageable tears...`,
+            () => `Working backwards to find out where the money went...`,
+            () => { const tot = getRaw('rev-total'); return tot > 0 ? `Scanning the ₹${tot.toLocaleString('en-IN')} total damage...` : `Awaiting reverse fiscal payload...`; },
+            () => { const agg = document.getElementById('out-rev-agg').innerText; return agg !== "₹ 0.00" ? `Base value stripped down to ${agg}. The rest is pure extortion.` : `Running algebraic unfucking protocols...`; },
+            () => `Algebraic un-building of builder math in progress...`,
+            () => { const gst = getRaw('rev-gst-p'); return gst > 0 ? `Extracting ${gst}% GST from the corpse...` : `Checking tax loop-holes in reverse...`; },
+            () => `Calculating true value minus governmental padding...`,
+            () => { const lgl = getRaw('rev-legal'); return lgl > 0 ? `Stripping ₹${lgl.toLocaleString('en-IN')} of legal fees from the top...` : `Searching for fixed charges...`; },
+            () => `Reverse engineering the real estate bubble...`,
+            () => { const sd = getRaw('rev-sd-p'); return sd > 0 ? `Peeling off ${sd}% Stamp Duty...` : `Un-licking digital stamps...`; },
+            () => `Who knew subtracting could hurt this much?`,
+            () => { const reg = getRaw('rev-reg-p'); return reg > 0 ? `Bypassing registrar logic gates...` : `Calculating reverse registration limits...`; },
+            () => `Un-baking the pie. Warning: It's mostly tax.`,
+            () => `Running anti-capitalist decryption algorithms...`,
+            () => `Translating 'Total Cost' back into 'Agreement Value'...`,
+            () => { const agg = document.getElementById('out-rev-agg').innerText.replace(/[^\d.]/g, ''); return parseFloat(agg) > 10000000 ? `A ₹${parseFloat(agg).toLocaleString('en-IN')} base? Welcome to the 1%, Boss Ryan.` : `Initiating chronological rollback...`; }
         ]
     };
 
@@ -640,7 +728,6 @@
 
     // ==========================================
     // "SUPER AI" LASER-TARGETED SCANNER (XLSX/PDF)
-    // PRESERVED EXACTLY AS REQUESTED
     // ==========================================
     async function importData(event) {
         const file = event.target.files[0];
@@ -798,7 +885,111 @@
     }
 
     // ==========================================
-    // EXPORT ENGINE (DARK MODE FIXES ONLY)
+    // MODULE 5: REVERSE CALCULATION (INFINITE MATH)
+    // ==========================================
+    function addRevCustomField() {
+        const labelName = prompt("DEFINE OTHER CHARGE (e.g. Maintenance):");
+        if (!labelName) return;
+        const grid = document.getElementById('rev-calc-grid');
+        const uniqueId = "rev-dyn-" + Date.now();
+        const wrapper = document.createElement('div');
+        wrapper.id = "wrap-" + uniqueId;
+        wrapper.className = "dynamic-row";
+        wrapper.innerHTML = `
+            <label class="calc-lbl" style="width:100%;">${labelName.toUpperCase()} <button class="remove-mgc" onclick="removeRevField('${uniqueId}')" tabindex="-1">[✖]</button></label>
+            <input type="text" id="${uniqueId}" placeholder="0.00" onkeyup="computeReverse()" class="calc-in-mgc rev-dynamic-fee" data-label="${labelName.toUpperCase()}">
+        `;
+        grid.appendChild(wrapper);
+        document.getElementById(uniqueId).focus();
+        updateHumorOverride("Reverse payload injected.");
+    }
+
+    function removeRevField(id) { document.getElementById("wrap-" + id).remove(); computeReverse(); }
+
+    function computeReverse() {
+        const totalCost = getRaw('rev-total');
+        const gstP = getRaw('rev-gst-p');
+        const sdP = getRaw('rev-sd-p');
+        const regP = getRaw('rev-reg-p');
+        const legal = getRaw('rev-legal');
+        
+        const tdsP = getRaw('rev-tds-p') || 1; 
+        const cessP = getRaw('rev-cess-p') || 1;
+
+        let customTotal = 0;
+        document.querySelectorAll('.rev-dynamic-fee').forEach(input => {
+            customTotal += parseFloat(input.value.toString().replace(/,/g, '')) || 0;
+        });
+
+        const fixedFees = legal + customTotal;
+
+        // INFINITE MATH ALGEBRAIC CONVERGENCE LOOP
+        let baseAgg = totalCost - fixedFees; 
+        let appliedTds = 0;
+        let appliedCess = 0;
+        
+        for(let i=0; i<5; i++) {
+            let currentFixed = fixedFees;
+            let currentPct = gstP + sdP;
+            
+            if ((baseAgg * (regP / 100)) > 30000 && regP > 0) {
+                currentFixed += 30000;
+            } else {
+                currentPct += regP;
+            }
+            
+            appliedTds = (baseAgg >= 5000000) ? tdsP : 0;
+            appliedCess = (baseAgg >= 10000000) ? cessP : 0;
+            
+            currentPct += appliedTds + appliedCess;
+            
+            baseAgg = (totalCost - currentFixed) / (1 + (currentPct / 100));
+        }
+
+        if (baseAgg < 0) baseAgg = 0;
+
+        let finalRegAmt = (baseAgg * (regP / 100));
+        if (finalRegAmt > 30000 && regP > 0) finalRegAmt = 30000;
+        
+        const actualGst = baseAgg * (gstP / 100);
+        const actualSd = baseAgg * (sdP / 100);
+        const actualTds = baseAgg * (appliedTds / 100);
+        const actualCess = baseAgg * (appliedCess / 100);
+        
+        const totalGovt = actualGst + actualSd + finalRegAmt + legal + actualTds + actualCess;
+
+        const tdsLbl = document.getElementById('lbl-rev-tds');
+        const tdsInp = document.getElementById('rev-tds-p');
+        const cessLbl = document.getElementById('lbl-rev-cess');
+        const cessInp = document.getElementById('rev-cess-p');
+
+        if(baseAgg >= 5000000) { 
+            tdsLbl.style.display = "flex"; 
+            tdsInp.style.display = "block"; 
+            document.getElementById('lbl-amt-rev-tds').innerText = formatCurrency(actualTds);
+        } else { 
+            tdsLbl.style.display = "none"; 
+            tdsInp.style.display = "none"; 
+            tdsInp.value = "1"; 
+        } 
+
+        if(baseAgg >= 10000000) { 
+            cessLbl.style.display = "flex"; 
+            cessInp.style.display = "block"; 
+            document.getElementById('lbl-amt-rev-cess').innerText = formatCurrency(actualCess);
+        } else { 
+            cessLbl.style.display = "none"; 
+            cessInp.style.display = "none"; 
+            cessInp.value = "1"; 
+        }
+
+        document.getElementById('out-rev-govt').innerText = formatCurrency(totalGovt);
+        document.getElementById('out-rev-custom').innerText = formatCurrency(customTotal);
+        document.getElementById('out-rev-agg').innerText = formatCurrency(baseAgg);
+    }
+
+    // ==========================================
+    // EXPORT ENGINE (ONE-PAGE DASHBOARD LAYOUT)
     // ==========================================
     function openExportModal() { document.getElementById('export-modal').style.display = 'flex'; }
     function closeExportModal() { document.getElementById('export-modal').style.display = 'none'; }
@@ -825,13 +1016,13 @@
         if (document.getElementById('chk-flow').checked) {
             data.flow = [
                 ["Agreement Value", formatCurrency(getRaw('val-agg'))],
-                ["GST", (document.getElementById('val-gst-p').value || "0") + "%"],
-                ["Stamp Duty", (document.getElementById('val-sd-p').value || "0") + "%"],
-                ["Registration", (document.getElementById('val-reg-p').value || "0") + "% (Max 30K)"],
+                ["GST", (document.getElementById('val-gst-p').value || "0") + "% (" + (document.getElementById('lbl-amt-gst').innerText || "₹ 0") + ")"],
+                ["Stamp Duty", (document.getElementById('val-sd-p').value || "0") + "% (" + (document.getElementById('lbl-amt-sd').innerText || "₹ 0") + ")"],
+                ["Registration", (document.getElementById('val-reg-p').value || "0") + "% (Max 30K) (" + (document.getElementById('lbl-amt-reg').innerText || "₹ 0") + ")"],
                 ["Legal & Docs", formatCurrency(getRaw('val-legal'))]
             ];
-            if(getRaw('val-agg') >= 5000000) data.flow.push(["TDS (>50L)", document.getElementById('val-tds-p').value + "%"]);
-            if(getRaw('val-agg') >= 10000000) data.flow.push(["Metro Cess (>1Cr)", document.getElementById('val-cess-p').value + "%"]);
+            if(getRaw('val-agg') >= 5000000) data.flow.push(["TDS (>50L)", document.getElementById('val-tds-p').value + "% (" + (document.getElementById('lbl-amt-tds').innerText || "₹ 0") + ")"]);
+            if(getRaw('val-agg') >= 10000000) data.flow.push(["Metro Cess (>1Cr)", document.getElementById('val-cess-p').value + "% (" + (document.getElementById('lbl-amt-cess').innerText || "₹ 0") + ")"]);
 
             document.querySelectorAll('.dynamic-fee').forEach(input => {
                 data.flow.push([input.dataset.label || "Other Charge", formatCurrency(parseFloat(input.value.replace(/,/g, '')) || 0)]);
@@ -886,7 +1077,7 @@
             let ws_data = [
                 ["CAPITAL FLOW ENGINE REPORT", "", ""],
                 ["SYSTEM ARCHITECTURE // mgcryan v0.0.0.1", "", ""],
-                ["EXPORTED & CREATED BY // " + activeUser.toUpperCase(), "", ""],
+                ["EXPORTED & CREATED BY // " + activeUser, "", ""],
                 ["GENERATED // " + dateStr, "", ""],
                 ["", "", ""]
             ];
@@ -912,45 +1103,37 @@
             
             const hour = new Date().getHours();
             let isNight = hour >= 18 || hour < 6;
+            let isBW = false;
 
             const themeChoice = document.querySelector('input[name="pdf-theme"]:checked').value;
             if (themeChoice === 'dark') isNight = true;
             else if (themeChoice === 'light') isNight = false;
+            else if (themeChoice === 'bw') { isNight = false; isBW = true; }
 
-            // ELITE DARK MODE FIXES APPLIED HERE
-            const bgFill = isNight ? [5, 10, 20] : [255, 255, 255];
-            const titleColor = isNight ? [0, 212, 255] : [0, 115, 230];
-            const txtColor = isNight ? [180, 180, 180] : [100, 100, 100];
+            const bgFill = isNight ? [5, 10, 20] : [255, 255, 255]; 
+            const titleColor = isBW ? [0, 0, 0] : (isNight ? [0, 212, 255] : [0, 115, 230]); 
+            const txtColor = isBW ? [80, 80, 80] : (isNight ? [180, 180, 180] : [100, 100, 100]);
             
-            // Fixed header colors so text is visible on dark mode
-            const headFillFlow = isNight ? [15, 25, 45] : [0, 115, 230];
-            const headTxtFlow = isNight ? [0, 212, 255] : [255, 255, 255]; 
+            const headFillFlow = isBW ? [240, 240, 240] : (isNight ? [15, 25, 45] : [0, 115, 230]);
+            const headTxtFlow = isBW ? [0, 0, 0] : (isNight ? [0, 212, 255] : [255, 255, 255]); 
             
-            const headFillArea = isNight ? [15, 25, 45] : [0, 212, 255];
-            const headTxtArea = isNight ? [0, 230, 118] : [255, 255, 255]; 
+            const headFillArea = isBW ? [240, 240, 240] : (isNight ? [15, 25, 45] : [0, 212, 255]);
+            const headTxtArea = isBW ? [0, 0, 0] : (isNight ? [0, 230, 118] : [255, 255, 255]); 
             
-            const headFillLoan = isNight ? [15, 25, 45] : [255, 42, 85];
-            const headTxtLoan = isNight ? [255, 42, 85] : [255, 255, 255]; 
+            const headFillLoan = isBW ? [240, 240, 240] : (isNight ? [15, 25, 45] : [255, 42, 85]);
+            const headTxtLoan = isBW ? [0, 0, 0] : (isNight ? [255, 42, 85] : [255, 255, 255]); 
             
-            const headFillMatrix = isNight ? [15, 25, 45] : [244, 208, 63];
-            const headTxtMatrix = isNight ? [244, 208, 63] : [0, 0, 0]; 
+            const headFillMatrix = isBW ? [240, 240, 240] : (isNight ? [15, 25, 45] : [244, 208, 63]);
+            const headTxtMatrix = isBW ? [0, 0, 0] : (isNight ? [244, 208, 63] : [0, 0, 0]); 
             
-            const altRow = isNight ? [12, 18, 32] : [248, 248, 248];
-            const gridLine = isNight ? [30, 60, 100] : [220, 220, 220]; 
-            const bodyTxt = isNight ? [230, 230, 230] : [40, 40, 40];
+            const altRow = isBW ? [250, 250, 250] : (isNight ? [12, 18, 32] : [248, 248, 248]); 
+            const gridLine = isBW ? [180, 180, 180] : (isNight ? [30, 60, 100] : [220, 220, 220]); 
+            const bodyTxt = isBW ? [0, 0, 0] : (isNight ? [230, 230, 230] : [40, 40, 40]); 
 
-            // Prevent Page Background Overlap
-            const paintedPages = new Set([1]); 
-            const pageBgHook = function(data) {
-                if(isNight && !paintedPages.has(data.pageNumber)) { 
-                    doc.setFillColor(...bgFill); 
-                    doc.rect(0, 0, doc.internal.pageSize.width, doc.internal.pageSize.height, 'F'); 
-                    paintedPages.add(data.pageNumber);
-                }
-            };
-
-            // Paint first page background
-            if(isNight) { doc.setFillColor(...bgFill); doc.rect(0, 0, doc.internal.pageSize.width, doc.internal.pageSize.height, 'F'); }
+            if(isNight && !isBW) { 
+                doc.setFillColor(...bgFill); 
+                doc.rect(0, 0, doc.internal.pageSize.width, doc.internal.pageSize.height, 'F'); 
+            }
 
             doc.setFontSize(14);
             doc.setTextColor(...titleColor);
@@ -959,84 +1142,64 @@
             doc.setFontSize(7);
             doc.setTextColor(...txtColor);
             doc.text("SYSTEM ARCHITECTURE // mgcryan v0.0.0.1", 14, 24);
-            doc.text("EXPORTED & CREATED BY // " + activeUser.toUpperCase(), 14, 28);
+            doc.text("EXPORTED & CREATED BY // " + activeUser, 14, 28);
             doc.text("GENERATED // " + dateStr, 14, 32);
 
-            let leftY = 38;
-            let rightY = 38;
-            
             const tableConfig = {
                 theme: 'grid',
-                bodyStyles: { fontSize: 7, cellPadding: 1.5 },
+                bodyStyles: { fontSize: 7, cellPadding: 1.5, fillColor: isBW ? [255,255,255] : (isNight ? bgFill : [255, 255, 255]) },
                 alternateRowStyles: { fillColor: altRow },
-                styles: { textColor: bodyTxt, lineColor: gridLine, fillColor: bgFill },
-                willDrawPage: pageBgHook
+                styles: { textColor: bodyTxt, lineColor: gridLine }, 
+                margin: { left: 14, right: 14 },
+                pageBreak: 'avoid'
             };
 
             const mapSafePDF = (arr) => arr.map(row => row.map(cell => sanitizeForPDF(cell)));
 
+            let leftY = 38;
+            const leftColX = 14;
+            const leftColWidth = 85;
+
             if(data.flow) {
-                doc.autoTable({ 
-                    ...tableConfig, 
-                    startY: leftY, 
-                    margin: { left: 14, right: 108 }, 
-                    head: [['Capital Flow', 'Value']], 
-                    body: mapSafePDF(data.flow), 
-                    headStyles: { fillColor: headFillFlow, textColor: headTxtFlow, fontSize: 8, cellPadding: 1.5, minCellHeight: 6 }, 
-                    columnStyles: { 1: { halign: 'right' } } 
-                });
-                leftY = doc.lastAutoTable.finalY + 6;
+                doc.autoTable({ ...tableConfig, startY: leftY, margin: { left: leftColX }, tableWidth: leftColWidth, head: [['Capital Flow', 'Value']], body: mapSafePDF(data.flow), headStyles: { fillColor: headFillFlow, textColor: headTxtFlow, fontSize: 8, cellPadding: 1.5, minCellHeight: 6 }, columnStyles: { 1: { halign: 'right' } } });
+                leftY = doc.lastAutoTable.finalY + 4;
             }
             if(data.area) {
-                if(leftY > 260) { doc.addPage(); leftY = 15; if(isNight) { doc.setFillColor(...bgFill); doc.rect(0, 0, doc.internal.pageSize.width, doc.internal.pageSize.height, 'F'); paintedPages.add(doc.internal.getNumberOfPages()); } }
-                doc.autoTable({ 
-                    ...tableConfig, 
-                    startY: leftY, 
-                    margin: { left: 14, right: 108 }, 
-                    head: [['Area Engine', 'Value']], 
-                    body: mapSafePDF(data.area), 
-                    headStyles: { fillColor: headFillArea, textColor: headTxtArea, fontSize: 8, cellPadding: 1.5 }, 
-                    columnStyles: { 1: { halign: 'right' } } 
-                });
-                leftY = doc.lastAutoTable.finalY + 6;
+                doc.autoTable({ ...tableConfig, startY: leftY, margin: { left: leftColX }, tableWidth: leftColWidth, head: [['Area Engine', 'Value']], body: mapSafePDF(data.area), headStyles: { fillColor: headFillArea, textColor: headTxtArea, fontSize: 8, cellPadding: 1.5 }, columnStyles: { 1: { halign: 'right' } } });
+                leftY = doc.lastAutoTable.finalY + 4;
             }
             if(data.loan) {
-                if(leftY > 260) { doc.addPage(); leftY = 15; if(isNight) { doc.setFillColor(...bgFill); doc.rect(0, 0, doc.internal.pageSize.width, doc.internal.pageSize.height, 'F'); paintedPages.add(doc.internal.getNumberOfPages()); } }
-                doc.autoTable({ 
-                    ...tableConfig, 
-                    startY: leftY, 
-                    margin: { left: 14, right: 108 }, 
-                    head: [['Mortgage Estimator', 'Value']], 
-                    body: mapSafePDF(data.loan), 
-                    headStyles: { fillColor: headFillLoan, textColor: headTxtLoan, fontSize: 8, cellPadding: 1.5 }, 
-                    columnStyles: { 1: { halign: 'right' } } 
-                });
-                leftY = doc.lastAutoTable.finalY + 6;
+                doc.autoTable({ ...tableConfig, startY: leftY, margin: { left: leftColX }, tableWidth: leftColWidth, head: [['Mortgage Estimator', 'Value']], body: mapSafePDF(data.loan), headStyles: { fillColor: headFillLoan, textColor: headTxtLoan, fontSize: 8, cellPadding: 1.5 }, columnStyles: { 1: { halign: 'right' } } });
             }
+            
             if(data.matrix) {
+                let mRows = data.matrix.length;
+                let mFontSize = 7;
+                let mPad = 1.5;
+                
+                // AUTO SHRINK ALGORITHM (Ensures One Page Lock)
+                if(mRows > 45) { mFontSize = 5; mPad = 0.8; }
+                else if(mRows > 35) { mFontSize = 6; mPad = 1.0; }
+                else if(mRows > 25) { mFontSize = 6.5; mPad = 1.2; }
+
                 doc.autoTable({ 
                     ...tableConfig, 
-                    startY: rightY, 
-                    margin: { left: 108, right: 14 }, 
-                    head: [['Payment Matrix', '%', 'Amount']], 
+                    startY: 38, 
+                    margin: { left: 104 }, 
+                    tableWidth: 92, 
+                    head: [['Payment Matrix', 'Percentage', 'Amount']], 
                     body: mapSafePDF(data.matrix), 
-                    headStyles: { fillColor: headFillMatrix, textColor: headTxtMatrix, fontSize: 8, cellPadding: 1.5 }, 
-                    columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' } } 
+                    headStyles: { fillColor: headFillMatrix, textColor: headTxtMatrix, fontSize: mFontSize + 1, cellPadding: mPad },
+                    bodyStyles: { fontSize: mFontSize, cellPadding: mPad, fillColor: isBW ? [255,255,255] : (isNight ? bgFill : [255, 255, 255]) },
+                    // Precise Column Layout Polish
+                    columnStyles: { 0: { cellWidth: 46 }, 1: { halign: 'right', cellWidth: 18 }, 2: { halign: 'right', cellWidth: 28 } } 
                 });
-                rightY = doc.lastAutoTable.finalY + 6;
             }
-
-            let finalY = Math.max(leftY, rightY);
 
             doc.setFontSize(7);
             doc.setTextColor(150, 150, 150);
             const disclaimer = "DISCLAIMER: This system-generated estimate is for informational purposes only and is subject to official verification. Generated via mgcryan v0.0.0.1 architecture.";
-            const pageHeight = doc.internal.pageSize.height;
-            if(finalY > pageHeight - 15) { 
-                doc.addPage(); finalY = 20; 
-                if(isNight) { doc.setFillColor(...bgFill); doc.rect(0, 0, doc.internal.pageSize.width, pageHeight, 'F'); paintedPages.add(doc.internal.getNumberOfPages()); } 
-            }
-            doc.text(disclaimer, 105, finalY + 5, { align: 'center' });
+            doc.text(disclaimer, 14, doc.internal.pageSize.height - 8);
 
             doc.save(`mgcryan_Capital_Flow_${safeNameExt}.pdf`);
         }
@@ -1044,6 +1207,4 @@
     }
 </script>
 </body>
-
 </html>
-
