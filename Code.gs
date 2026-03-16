@@ -1,5 +1,5 @@
 /**
- * mgcryan - SERVER LOGIC (SPEED OPTIMIZED + UNIVERSAL PASSKEY + ELITE DB ACCESS + FORCE RESETS + DEEP TELEMETRY LOGGING)
+ * mgcryan - SERVER LOGIC
  */
 
 function sha256(str) {
@@ -20,13 +20,15 @@ function setupSheet(ss, name, headers) {
 
 function ensureUserColumns(sheet) {
   if (sheet.getLastRow() === 0) {
-    sheet.appendRow(["ID", "Username", "Password", "Role", "Name", "Auth", "Status", "BiometricID", "BioStatus", "DB_Access", "ForceReset"]);
+    sheet.appendRow(["ID", "Username", "Password", "Role", "Name", "Auth", "Status", "PasskeyID", "PasskeyStatus", "DB_Access", "ForceReset"]);
     return;
   }
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   if (String(headers[0]).trim().toUpperCase() !== "ID") sheet.insertColumnBefore(1);
-  if (sheet.getLastColumn() < 8 || headers[7] !== "BiometricID") { sheet.getRange(1, 8).setValue("BiometricID"); }
-  if (sheet.getLastColumn() < 9 || headers[8] !== "BioStatus") { sheet.getRange(1, 9).setValue("BioStatus"); }
+  
+  // Non-destructive column renaming from Biometric to Passkey
+  if (sheet.getLastColumn() < 8 || headers[7] !== "PasskeyID") { sheet.getRange(1, 8).setValue("PasskeyID"); }
+  if (sheet.getLastColumn() < 9 || headers[8] !== "PasskeyStatus") { sheet.getRange(1, 9).setValue("PasskeyStatus"); }
   if (sheet.getLastColumn() < 10 || headers[9] !== "DB_Access") { sheet.getRange(1, 10).setValue("DB_Access"); }
   if (sheet.getLastColumn() < 11 || headers[10] !== "ForceReset") { sheet.getRange(1, 11).setValue("ForceReset"); }
 }
@@ -78,7 +80,6 @@ function doPost(e) {
     
     const logSheet = setupSheet(ss, "Logs", ["Date", "Time", "Operator_ID", "Operator_Username", "Operator_Name", "Target", "Action", "IP_Address", "OS", "Architecture", "Device_Type", "Model", "Browser", "CPU"]);
     
-    // Hot-patch: Upgrades existing Log sheets to 14 columns instantly without data loss
     if (logSheet.getLastRow() > 0) {
       const logHeaders = logSheet.getRange(1, 1, 1, logSheet.getLastColumn()).getValues()[0];
       if (logHeaders[3] !== "Operator_Username") {
@@ -221,9 +222,16 @@ function doPost(e) {
       const rows = userSheet.getDataRange().getValues();
       for (let i = 1; i < rows.length; i++) {
         if (String(rows[i][1]).trim() === String(data.username).trim()) {
-          userSheet.getRange(i + 1, 8).setValue(data.bioId);
+          userSheet.getRange(i + 1, 8).setValue(data.passkeyId);
           userSheet.getRange(i + 1, 9).setValue("Enabled"); 
-          logSheet.appendRow([dateStr, timeStr, rows[i][0], data.username, rows[i][4], "Security", "Registered Passkey"]);
+          
+          let forceReset = String(rows[i][10] || "").trim();
+          if (forceReset.includes("Passkey")) {
+             let updatedForce = forceReset.split(',').map(x => x.trim()).filter(x => x && x !== "Passkey").join(',');
+             userSheet.getRange(i + 1, 11).setValue(updatedForce);
+          }
+
+          logSheet.appendRow([dateStr, timeStr, rows[i][0], data.username, rows[i][4], "Security", "Registered New Passkey Hardware"]);
           return ContentService.createTextOutput("200");
         }
       }
@@ -240,20 +248,12 @@ function doPost(e) {
              return ContentService.createTextOutput("FORCE_AUTH");
           }
 
-          if (String(rows[i][7]).trim() === String(data.bioId).trim() && String(rows[i][8]).trim() !== "Disabled") {
+          if (String(rows[i][7]).trim() === String(data.passkeyId).trim() && String(rows[i][8]).trim() !== "Disabled") {
             const devInfo = data.deviceInfo || {};
-            const ip = devInfo.ip || "-";
-            const os = devInfo.os || "-";
-            const arch = devInfo.architecture || "-";
-            const devType = devInfo.device || "-";
-            const model = devInfo.model || "-";
-            const browser = devInfo.browser || "-";
-            const cpu = devInfo.cpu || "-";
-
-            logSheet.appendRow([dateStr, timeStr, rows[i][0], rows[i][1], rows[i][4], "Database", "Logged into Database Management via Passkey", ip, os, arch, devType, model, browser, cpu]);
+            logSheet.appendRow([dateStr, timeStr, rows[i][0], rows[i][1], rows[i][4], "Database", "Logged into Database Management via Passkey", devInfo.ip || "-", devInfo.os || "-", devInfo.architecture || "-", devInfo.device || "-", devInfo.model || "-", devInfo.browser || "-", devInfo.cpu || "-"]);
             return ContentService.createTextOutput("200");
           } else {
-            logSheet.appendRow([dateStr, timeStr, rows[i][0], rows[i][1], rows[i][4], "Database", "Failed Database Auth Attempt (Passkey)"]);
+            logSheet.appendRow([dateStr, timeStr, rows[i][0], rows[i][1], rows[i][4], "Database", "Failed Database Auth Attempt (Passkey Not Found or Disabled)"]);
             return ContentService.createTextOutput("403");
           }
         }
@@ -266,8 +266,8 @@ function doPost(e) {
       const isMaint = getSetting(settingsSheet, "MAINTENANCE") === "true";
       const passkeyLogin = getSetting(settingsSheet, "PASSKEY_LOGIN") !== "false";
       for (let i = 1; i < rows.length; i++) {
-        const storedBio = String(rows[i][7]).trim();
-        if (storedBio !== "" && storedBio === data.bioId) {
+        const storedPasskey = String(rows[i][7]).trim();
+        if (storedPasskey !== "" && storedPasskey === data.passkeyId) {
           
           const matchedUsername = String(rows[i][1]).trim();
           const role = String(rows[i][3]).trim();
@@ -277,11 +277,14 @@ function doPost(e) {
           if (forceReset.includes("Password")) {
              return ContentService.createTextOutput(JSON.stringify({ status: "FORCE_PASS", username: matchedUsername }));
           }
+          if (forceReset.includes("Passkey")) {
+             return ContentService.createTextOutput(JSON.stringify({ status: "FORCE_PASSKEY", username: matchedUsername }));
+          }
 
           if (!passkeyLogin && !role.toLowerCase().includes("developer")) return ContentService.createTextOutput("403_PASSKEY_LOGIN");
 
-          const bioStatus = String(rows[i][8]).trim();
-          if (bioStatus === "Disabled") return ContentService.createTextOutput("403_BIO");
+          const passkeyStatus = String(rows[i][8]).trim();
+          if (passkeyStatus === "Disabled") return ContentService.createTextOutput("403_BIO");
           
           if (isMaint && !role.toLowerCase().includes("developer")) return ContentService.createTextOutput("503");
           
@@ -290,15 +293,7 @@ function doPost(e) {
           sessionSheet.appendRow([userId, matchedUsername, role, dateStr, timeStr, sessionToken]);
           
           const devInfo = data.deviceInfo || {};
-          const ip = devInfo.ip || "-";
-          const os = devInfo.os || "-";
-          const arch = devInfo.architecture || "-";
-          const devType = devInfo.device || "-";
-          const model = devInfo.model || "-";
-          const browser = devInfo.browser || "-";
-          const cpu = devInfo.cpu || "-";
-          
-          logSheet.appendRow([dateStr, timeStr, userId, matchedUsername, rows[i][4], "Web App", "Logged into Web App via Passkey", ip, os, arch, devType, model, browser, cpu]);
+          logSheet.appendRow([dateStr, timeStr, userId, matchedUsername, rows[i][4], "Web App", "Logged into Web App via Passkey", devInfo.ip || "-", devInfo.os || "-", devInfo.architecture || "-", devInfo.device || "-", devInfo.model || "-", devInfo.browser || "-", devInfo.cpu || "-"]);
           
           let allowedPages = [];
           if (pageSheet.getLastRow() > 1) {
@@ -312,9 +307,10 @@ function doPost(e) {
 
           return ContentService.createTextOutput(JSON.stringify({
             status: "200", token: sessionToken,
-            user: { id: userId, username: matchedUsername, role: rows[i][3], name: rows[i][4], dbAccess: rows[i][9] || '', hasBio: true, bioStatus: bioStatus },
+            user: { id: userId, username: matchedUsername, role: rows[i][3], name: rows[i][4], dbAccess: rows[i][9] || '', hasPasskey: true, passkeyStatus: passkeyStatus },
             links: allowedPages,
-            bioEnabled: true
+            hasPasskey: true,
+            passkeyStatus: passkeyStatus
           }));
         }
       }
@@ -340,9 +336,12 @@ function doPost(e) {
             if (forceReset.includes("Password")) {
                return ContentService.createTextOutput(JSON.stringify({ status: "FORCE_PASS", username: matchedUsername }));
             }
+            if (forceReset.includes("Passkey")) {
+               return ContentService.createTextOutput(JSON.stringify({ status: "FORCE_PASSKEY", username: matchedUsername }));
+            }
 
-            const hasBio = String(rows[i][7]).trim() !== "";
-            const bioStatus = String(rows[i][8]).trim() || "Enabled";
+            const hasPasskey = String(rows[i][7]).trim() !== "";
+            const passkeyStatus = String(rows[i][8]).trim() || "Enabled";
             
             if (isMaint && !role.toLowerCase().includes("developer")) return ContentService.createTextOutput("503");
             
@@ -351,15 +350,7 @@ function doPost(e) {
             sessionSheet.appendRow([userId, matchedUsername, role, dateStr, timeStr, sessionToken]);
             
             const devInfo = data.deviceInfo || {};
-            const ip = devInfo.ip || "-";
-            const os = devInfo.os || "-";
-            const arch = devInfo.architecture || "-";
-            const devType = devInfo.device || "-";
-            const model = devInfo.model || "-";
-            const browser = devInfo.browser || "-";
-            const cpu = devInfo.cpu || "-";
-            
-            logSheet.appendRow([dateStr, timeStr, userId, matchedUsername, rows[i][4], "Web App", "Logged into Web App", ip, os, arch, devType, model, browser, cpu]);
+            logSheet.appendRow([dateStr, timeStr, userId, matchedUsername, rows[i][4], "Web App", "Logged into Web App", devInfo.ip || "-", devInfo.os || "-", devInfo.architecture || "-", devInfo.device || "-", devInfo.model || "-", devInfo.browser || "-", devInfo.cpu || "-"]);
             
             let allowedPages = [];
             if (pageSheet.getLastRow() > 1) {
@@ -373,10 +364,10 @@ function doPost(e) {
 
             return ContentService.createTextOutput(JSON.stringify({
               status: "200", token: sessionToken,
-              user: { id: userId, username: matchedUsername, role: rows[i][3], name: rows[i][4], dbAccess: rows[i][9] || '', hasBio: hasBio, bioStatus: bioStatus },
+              user: { id: userId, username: matchedUsername, role: rows[i][3], name: rows[i][4], dbAccess: rows[i][9] || '', hasPasskey: hasPasskey, passkeyStatus: passkeyStatus },
               links: allowedPages,
-              bioEnabled: hasBio,
-              bioStatus: bioStatus
+              hasPasskey: hasPasskey,
+              passkeyStatus: passkeyStatus
             }));
           }
         }
@@ -402,15 +393,7 @@ function doPost(e) {
           
           if (storedAuth === hashedAuthAttempt) {
             const devInfo = data.deviceInfo || {};
-            const ip = devInfo.ip || "-";
-            const os = devInfo.os || "-";
-            const arch = devInfo.architecture || "-";
-            const devType = devInfo.device || "-";
-            const model = devInfo.model || "-";
-            const browser = devInfo.browser || "-";
-            const cpu = devInfo.cpu || "-";
-
-            logSheet.appendRow([dateStr, timeStr, rows[i][0], rows[i][1], rows[i][4], "Database", "Logged into Database Management", ip, os, arch, devType, model, browser, cpu]);
+            logSheet.appendRow([dateStr, timeStr, rows[i][0], rows[i][1], rows[i][4], "Database", "Logged into Database Management", devInfo.ip || "-", devInfo.os || "-", devInfo.architecture || "-", devInfo.device || "-", devInfo.model || "-", devInfo.browser || "-", devInfo.cpu || "-"]);
             return ContentService.createTextOutput("200");
           } else {
             logSheet.appendRow([dateStr, timeStr, rows[i][0], rows[i][1], rows[i][4], "Database", "Failed Database Auth Attempt"]);
@@ -663,8 +646,8 @@ function doGet(e) {
 
     const users = userSheet.getDataRange().getValues().slice(1).map(r => {
       const isOnline = activeUsernames.includes(String(r[1]).trim());
-      const hasBioData = String(r[7]).trim() !== "";
-      return { id: r[0], username: r[1], role: r[3], name: r[4], status: isOnline ? 'Online' : 'Offline', bioStatus: r[8] || 'Enabled', dbAccess: r[9] || '', forceReset: r[10] || '', hasBio: hasBioData };
+      const hasPasskeyData = String(r[7]).trim() !== "";
+      return { id: r[0], username: r[1], role: r[3], name: r[4], status: isOnline ? 'Online' : 'Offline', passkeyStatus: r[8] || 'Enabled', dbAccess: r[9] || '', forceReset: r[10] || '', hasPasskey: hasPasskeyData };
     });
     
     let approvals = [];
