@@ -139,7 +139,7 @@
                 <div id="forgot-link" style="display:none; text-align:right; font-size:10px; color:var(--blue); cursor:pointer; margin-bottom:10px;" onclick="openForgotModal()">Forgot Password?</div>
                 
                 <button id="login-btn" onclick="login()">Login</button>
-                <button id="bio-btn" onclick="loginBiometric()" style="background: rgba(244, 208, 63, 0.1); border: 1px solid var(--gold); color: var(--gold); margin-top: 5px;">🧬 Passkey Login</button>
+                <button id="passkey-btn" onclick="loginPasskey()" style="background: rgba(244, 208, 63, 0.1); border: 1px solid var(--gold); color: var(--gold); margin-top: 5px;">🧬 Passkey Login</button>
                 
                 <div id="login-status" class="status-msg"></div>
             </div>
@@ -148,7 +148,12 @@
                 <div id="dynamic-links-container" style="margin-bottom: 15px;"></div>
                 
                 <button id="db-btn" onclick="openDBAuth()" style="display:none; background: transparent; border: 1px solid var(--blue); color: var(--blue);">User Management</button>
-                <button id="vault-passkey-btn" onclick="toggleMyPasskey(this)" style="display:none; background: transparent; border: 1px solid var(--green); color: var(--green); margin-top:5px;">Passkey: ON</button>
+                
+                <div style="display:flex; gap:5px; margin-top:5px;">
+                    <button id="vault-passkey-toggle-btn" onclick="toggleMyPasskey(this)" style="display:none; background: transparent; border: 1px solid var(--green); color: var(--green); flex:1;">Passkey: ON</button>
+                    <button id="vault-change-pk-btn" onclick="triggerPasskeySetup()" style="display:none; background: transparent; border: 1px solid var(--gold); color: var(--gold); flex:1;">🔄 Re-register</button>
+                </div>
+                
                 <button onclick="logout()" style="margin-top:10px; background: transparent; border: 1px solid var(--red); color: var(--red);">Logout</button>
             </div>
         </div>
@@ -241,19 +246,19 @@
                 <input type="password" id="db-auth-input" placeholder="Auth Code" class="enter-tab" data-next="decrypt-btn">
                 <span class="cyber-eye eye-closed" onclick="togglePass('db-auth-input', this)"></span>
             </div>
-            <button id="decrypt-btn" onclick="verifyDBAuth()">Verify</button>
-            <button id="db-bio-btn" onclick="verifyDBAuthBiometric()" style="background: rgba(244, 208, 63, 0.1); border: 1px solid var(--gold); color: var(--gold); margin-top: 10px; display:none;">🧬 Passkey Auth</button>
+            <button id="decrypt-btn" onclick="verifyDBAuth()">Verify Password</button>
+            <button id="db-passkey-btn" onclick="verifyDBAuthPasskey()" style="background: rgba(244, 208, 63, 0.1); border: 1px solid var(--gold); color: var(--gold); margin-top: 10px; display:none;">🧬 Passkey Auth</button>
             <button onclick="closeModals()" style="background:transparent; color: #aaa; margin-top:10px;">Cancel</button>
             <div id="decrypt-status" class="status-msg"></div>
         </div>
     </div>
 
-    <div class="modal" id="bio-setup-modal">
+    <div class="modal" id="passkey-setup-modal">
         <div class="glass-panel" style="width: 100%; max-width: 320px; text-align: center;">
-            <h3 style="color:var(--gold); margin-top:0;">Secure Your Account</h3>
-            <p style="font-size: 11px; color:#aaa; margin-bottom:20px;">Do you want to enable Passkey login for this device? This means you won't need to type your password next time.</p>
-            <button onclick="enrollBiometrics(this)" style="background:var(--gold); color:black;">Yes, Setup Passkey</button>
-            <button onclick="skipBiometrics()" style="background:transparent; border: 1px solid var(--grey); color: #888; margin-top:10px;">No, Skip</button>
+            <h3 id="passkey-setup-title" style="color:var(--gold); margin-top:0;">Secure Your Account</h3>
+            <p id="passkey-setup-desc" style="font-size: 11px; color:#aaa; margin-bottom:20px;">Do you want to enable Passkey login for this device? This means you won't need to type your password next time.</p>
+            <button onclick="enrollPasskey(this)" style="background:var(--gold); color:black;">Yes, Setup Passkey</button>
+            <button id="passkey-skip-btn" onclick="skipPasskeySetup()" style="background:transparent; border: 1px solid var(--grey); color: #888; margin-top:10px;">No, Skip</button>
         </div>
     </div>
 
@@ -470,6 +475,7 @@
                 <div style="display:flex; gap:10px; margin-top:8px; flex-wrap: wrap;">
                     <button id="btn-force-pass" class="btn-small btn-gold" onclick="setForceReset('Password', this)" style="flex-grow:1;">Require Password Change</button>
                     <button id="btn-force-auth" class="btn-small btn-gold" onclick="setForceReset('AuthCode', this)" style="flex-grow:1;">Require Auth Change</button>
+                    <button id="btn-force-passkey" class="btn-small btn-gold" onclick="setForceReset('Passkey', this)" style="flex-grow:1;">Require Passkey Update</button>
                 </div>
             </div>
 
@@ -529,6 +535,7 @@
     let loadingInterval = null;
     let tempBioUsername = "";
     let tempForceResetUser = "";
+    let isForcePasskeyEnrollment = false;
 
     const sysCrypt = {
         lock: (data) => btoa(unescape(encodeURIComponent(JSON.stringify(data)))),
@@ -557,7 +564,6 @@
         let os = "Unknown", osVersion = "", deviceType = "Desktop", model = "Standard Build", browser = "Unknown";
         let architecture = "Unknown", hardware = [];
 
-        // 1. Modern Client Hints API (Bypasses frozen Android 10 & missing model data)
         if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
             try {
                 const hints = await navigator.userAgentData.getHighEntropyValues([
@@ -584,7 +590,6 @@
             } catch(e) {}
         }
 
-        // 2. Fallback Legacy User-Agent Parsing (If Client Hints fails or is Apple)
         const ua = navigator.userAgent;
         if (os === "Unknown") {
             if (/windows phone/i.test(ua)) { os = "Windows Phone"; deviceType = "Mobile"; }
@@ -608,14 +613,12 @@
             else if (/i386|i686|win32|x86/i.test(ua)) architecture = "x86";
         }
 
-        // Browser Detection
         if (/edg/i.test(ua)) browser = "Edge";
         else if (/opr|opera/i.test(ua)) browser = "Opera";
         else if (/chrome|crios/i.test(ua)) browser = "Chrome";
         else if (/firefox|fxios/i.test(ua)) browser = "Firefox";
         else if (/safari/i.test(ua) && !/chrome/i.test(ua)) browser = "Safari";
 
-        // Deep Hardware Telemetry (GPU/CPU)
         try {
             const canvas = document.createElement('canvas');
             const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
@@ -630,7 +633,6 @@
 
         if (navigator.hardwareConcurrency) hardware.push(`${navigator.hardwareConcurrency}-Core CPU`);
         
-        // RAM (Browser capped at 8GB for anti-fingerprinting)
         if (navigator.deviceMemory) {
             let ram = navigator.deviceMemory;
             hardware.push(`${ram}${ram >= 8 ? 'GB+ (Browser Cap)' : 'GB'} RAM`);
@@ -882,6 +884,15 @@
                 if (loginFailAttempts >= 1) document.getElementById('forgot-link').style.display = 'block';
                 if(loginFailAttempts >= 3) { triggerLockout(); } 
                 else { setUIState('login-btn', false, "Login", true); document.getElementById('login-status').innerText = `Incorrect password. ${3 - loginFailAttempts} attempts left.`; }
+            } else if (text.startsWith('{"status":"FORCE_PASSKEY"')) {
+                isForcePasskeyEnrollment = true;
+                const d = JSON.parse(text);
+                tempBioUsername = d.username;
+                document.getElementById('passkey-setup-title').innerText = "Mandatory Security Update";
+                document.getElementById('passkey-setup-desc').innerText = "An Administrator requires you to register a fresh Passkey for this device before proceeding.";
+                document.getElementById('passkey-setup-modal').style.display = 'flex';
+                document.getElementById('passkey-skip-btn').style.display = 'none'; // No skipping allowed!
+                setUIState('login-btn', false, "Login");
             } else if (text.startsWith('{"status":"FORCE_PASS"')) {
                 const d = JSON.parse(text);
                 tempForceResetUser = d.username;
@@ -898,9 +909,10 @@
                 sessionStorage.setItem('mgc_token', data.token); 
                 sessionStorage.setItem('mgc_links_sec', sysCrypt.lock(data.links || []));
                 
-                if (!data.bioEnabled && data.bioStatus !== "Disabled" && sysData.passkeyLogin !== false && window.PublicKeyCredential) {
+                if (!data.hasPasskey && data.passkeyStatus !== "Disabled" && sysData.passkeyLogin !== false && window.PublicKeyCredential) {
                     tempBioUsername = u;
-                    document.getElementById('bio-setup-modal').style.display = 'flex';
+                    isForcePasskeyEnrollment = false;
+                    document.getElementById('passkey-setup-modal').style.display = 'flex';
                 } else {
                     initVault(data.user, data.links || []);
                     startPhantomKiller();
@@ -983,15 +995,26 @@
        }
     }
 
-    async function enrollBiometrics(btnElement) {
+    function triggerPasskeySetup() {
+        isForcePasskeyEnrollment = false; 
+        const session = sysCrypt.unlock(sessionStorage.getItem('mgc_secure'));
+        tempBioUsername = session.username;
+        document.getElementById('passkey-setup-title').innerText = "Update Passkey";
+        document.getElementById('passkey-setup-desc').innerText = "Registering a new Passkey will overwrite your existing one securely.";
+        document.getElementById('passkey-skip-btn').style.display = "inline-block";
+        document.getElementById('passkey-skip-btn').setAttribute('onclick', "document.getElementById('passkey-setup-modal').style.display='none'");
+        document.getElementById('passkey-setup-modal').style.display = "flex";
+    }
+
+    async function enrollPasskey(btnElement) {
         if (!window.PublicKeyCredential) {
             alert("Security Error: Passkeys are not supported on this browser/device.");
             return;
         }
         
-        const skipBtn = btnElement.nextElementSibling;
-        btnElement.innerText = "Summoning cyber hamsters... 🐹";
+        btnElement.innerText = "Authenticating...";
         btnElement.disabled = true;
+        const skipBtn = document.getElementById('passkey-skip-btn');
         if(skipBtn) skipBtn.style.display = "none";
 
         try {
@@ -1008,29 +1031,36 @@
             
             btnElement.innerText = "Verifying encryption... 🔐";
             
-            const bioId = bufferToBase64url(cred.rawId);
-            await fetch(API, postConfig({ action: "register_bio", username: tempBioUsername, bioId: bioId }));
+            const passkeyId = bufferToBase64url(cred.rawId);
+            await fetch(API, postConfig({ action: "register_bio", username: tempBioUsername, passkeyId: passkeyId }));
             
-            alert("Passkey Security Enabled!");
-            skipBiometrics(); 
+            if (isForcePasskeyEnrollment) {
+                alert("Mandatory Passkey successfully registered! Please log in to access your account.");
+                window.location.reload();
+            } else {
+                alert("Passkey Security successfully linked to this device!");
+                skipPasskeySetup(); 
+            }
         } catch(e) {
             console.error("Passkey Enrollment Error:", e);
             btnElement.innerText = "Yes, Setup Passkey";
             btnElement.disabled = false;
-            if(skipBtn) skipBtn.style.display = "inline-block";
+            if(!isForcePasskeyEnrollment && skipBtn) skipBtn.style.display = "inline-block";
             alert("Passkey setup failed or was canceled.");
         }
     }
 
-    function skipBiometrics() {
-        document.getElementById('bio-setup-modal').style.display = 'none';
+    function skipPasskeySetup() {
+        document.getElementById('passkey-setup-modal').style.display = 'none';
         const encSession = sessionStorage.getItem('mgc_secure');
-        const userLinks = sysCrypt.unlock(sessionStorage.getItem('mgc_links_sec') || "[]");
-        initVault(sysCrypt.unlock(encSession), userLinks);
-        startPhantomKiller();
+        if (encSession && !document.getElementById('vault-zone').style.display.includes('block')) {
+            const userLinks = sysCrypt.unlock(sessionStorage.getItem('mgc_links_sec') || "[]");
+            initVault(sysCrypt.unlock(encSession), userLinks);
+            startPhantomKiller();
+        }
     }
 
-    async function loginBiometric() {
+    async function loginPasskey() {
         if (!window.PublicKeyCredential) {
             alert("Security Error: Passkeys are not supported on this browser/device.");
             return;
@@ -1044,29 +1074,38 @@
                 timeout: 60000
             };
 
-            setUIState('bio-btn', true, "Waiting...");
+            setUIState('passkey-btn', true, "Waiting...");
             const assertion = await navigator.credentials.get({ publicKey: pubKey });
-            const bioId = bufferToBase64url(assertion.rawId);
+            const passkeyId = bufferToBase64url(assertion.rawId);
             
-            setUIState('bio-btn', true, "Authenticating...");
+            setUIState('passkey-btn', true, "Authenticating...");
             
             const devInfo = await getDeviceInfo();
-            const res = await fetch(API, postConfig({ action: "login_bio", bioId: bioId, deviceInfo: devInfo }));
+            const res = await fetch(API, postConfig({ action: "login_bio", passkeyId: passkeyId, deviceInfo: devInfo }));
             const text = await res.text();
             
             if (text === "403_PASSKEY_LOGIN") {
-                setUIState('bio-btn', false, "🧬 Passkey Login"); 
+                setUIState('passkey-btn', false, "🧬 Passkey Login"); 
                 document.getElementById('login-status').innerText = "Global Passkey Offline.";
                 alert("SECURITY ALERT:\n\nPasskey login is currently disabled globally by the Administrator.");
             } else if (text === "403_BIO") {
-                setUIState('bio-btn', false, "🧬 Passkey Login"); 
+                setUIState('passkey-btn', false, "🧬 Passkey Login"); 
                 document.getElementById('login-status').innerText = "Passkey Disabled.";
                 alert("SECURITY ALERT:\n\nPasskey login has been disabled for your account.");
             } else if (text === "401" || text === "401_PASS" || text.startsWith("ERROR:")) { 
-                setUIState('bio-btn', false, "🧬 Passkey Login"); document.getElementById('login-status').innerText = "Passkey Verification Failed."; 
+                setUIState('passkey-btn', false, "🧬 Passkey Login"); document.getElementById('login-status').innerText = "Passkey Verification Failed."; 
             } else if (text === "503") {
                 document.getElementById('login-container').style.display = "none";
                 document.getElementById('massive-maint-block').style.display = "block";
+            } else if (text.startsWith('{"status":"FORCE_PASSKEY"')) {
+                isForcePasskeyEnrollment = true;
+                const d = JSON.parse(text);
+                tempBioUsername = d.username;
+                document.getElementById('passkey-setup-title').innerText = "Mandatory Security Update";
+                document.getElementById('passkey-setup-desc').innerText = "An Administrator requires you to register a fresh Passkey for this device before proceeding.";
+                document.getElementById('passkey-setup-modal').style.display = 'flex';
+                document.getElementById('passkey-skip-btn').style.display = 'none';
+                setUIState('passkey-btn', false, "🧬 Passkey Login");
             } else if (text.startsWith('{"status":"FORCE_PASS"')) {
                 const d = JSON.parse(text);
                 tempForceResetUser = d.username;
@@ -1074,7 +1113,7 @@
                 document.getElementById('force-pass-status').innerText = "";
                 document.getElementById('force-pass-btn').disabled = true;
                 document.getElementById('force-pass-modal').style.display = 'flex';
-                setUIState('bio-btn', false, "🧬 Passkey Login");
+                setUIState('passkey-btn', false, "🧬 Passkey Login");
             } else if (text.includes("200")) {
                 const data = JSON.parse(text);
                 sessionStorage.setItem('mgc_secure', sysCrypt.lock(data.user));
@@ -1082,10 +1121,10 @@
                 sessionStorage.setItem('mgc_links_sec', sysCrypt.lock(data.links || []));
                 initVault(data.user, data.links || []);
                 startPhantomKiller();
-            } else { setUIState('bio-btn', false, "🧬 Passkey Login"); }
+            } else { setUIState('passkey-btn', false, "🧬 Passkey Login"); }
         } catch(e) {
             console.error("Passkey Login Error:", e);
-            setUIState('bio-btn', false, "🧬 Passkey Login");
+            setUIState('passkey-btn', false, "🧬 Passkey Login");
             document.getElementById('login-status').innerText = "Passkey canceled or unavailable.";
         }
     }
@@ -1101,7 +1140,7 @@
         const session = sysCrypt.unlock(sessionStorage.getItem('mgc_secure'));
         await fetch(API, postConfig({ action: "toggle_bio", targetUser: session.username, operatorId: session.id, operatorUsername: session.username, operatorName: session.name }));
         
-        session.bioStatus = newState;
+        session.passkeyStatus = newState;
         sessionStorage.setItem('mgc_secure', sysCrypt.lock(session));
 
         btnElement.innerText = isOff ? "Passkey: ON" : "Passkey: OFF";
@@ -1109,6 +1148,9 @@
         btnElement.style.color = isOff ? "var(--green)" : "var(--red)";
         btnElement.style.pointerEvents = 'auto';
         btnElement.style.opacity = '1';
+        
+        const vaultChangePkBtn = document.getElementById('vault-change-pk-btn');
+        if (vaultChangePkBtn) vaultChangePkBtn.style.display = isOff ? "inline-block" : "none";
     }
 
     async function togglePasskeyAccess(targetUser, btnElement) {
@@ -1160,14 +1202,21 @@
         document.getElementById('vault-zone').style.display = "block";
         document.getElementById('greet').innerText = `Welcome, ${user.name}`;
         
-        const vaultBioBtn = document.getElementById('vault-passkey-btn');
-        if (user.hasBio) {
-            vaultBioBtn.style.display = "inline-block";
-            vaultBioBtn.innerText = user.bioStatus === "Disabled" ? "Passkey: OFF" : "Passkey: ON";
-            vaultBioBtn.style.borderColor = user.bioStatus === "Disabled" ? "var(--red)" : "var(--green)";
-            vaultBioBtn.style.color = user.bioStatus === "Disabled" ? "var(--red)" : "var(--green)";
+        const vaultPasskeyToggleBtn = document.getElementById('vault-passkey-toggle-btn');
+        const vaultChangePkBtn = document.getElementById('vault-change-pk-btn');
+        
+        if (user.hasPasskey) {
+            vaultPasskeyToggleBtn.style.display = "inline-block";
+            vaultPasskeyToggleBtn.innerText = user.passkeyStatus === "Disabled" ? "Passkey: OFF" : "Passkey: ON";
+            vaultPasskeyToggleBtn.style.borderColor = user.passkeyStatus === "Disabled" ? "var(--red)" : "var(--green)";
+            vaultPasskeyToggleBtn.style.color = user.passkeyStatus === "Disabled" ? "var(--red)" : "var(--green)";
+            
+            vaultChangePkBtn.style.display = user.passkeyStatus === "Disabled" ? "none" : "inline-block";
+            vaultChangePkBtn.innerText = "🔄 Re-register";
         } else {
-            vaultBioBtn.style.display = "none";
+            vaultPasskeyToggleBtn.style.display = "none";
+            vaultChangePkBtn.style.display = "inline-block";
+            vaultChangePkBtn.innerText = "➕ Setup Passkey";
         }
 
         const role = String(user.role).toLowerCase();
@@ -1247,14 +1296,14 @@
         document.getElementById('db-auth-modal').style.display = 'flex';
         document.getElementById('db-auth-input').value = "";
         
-        const dbBioBtn = document.getElementById('db-bio-btn');
-        if (session.hasBio && session.bioStatus !== "Disabled") {
-            dbBioBtn.style.display = "inline-block";
+        const dbPasskeyBtn = document.getElementById('db-passkey-btn');
+        if (session.hasPasskey && session.passkeyStatus !== "Disabled") {
+            dbPasskeyBtn.style.display = "inline-block";
         } else {
-            dbBioBtn.style.display = "none";
+            dbPasskeyBtn.style.display = "none";
         }
 
-        setUIState('decrypt-btn', false, "Verify");
+        setUIState('decrypt-btn', false, "Verify Password");
         document.getElementById('db-auth-input').focus();
     }
 
@@ -1275,19 +1324,19 @@
             const text = await res.text();
             clearInterval(loadingInterval);
             
-            if (text.startsWith("ERROR:")) { setUIState('decrypt-btn', false, "Verify", true); document.getElementById('decrypt-status').innerText = text; return; }
+            if (text.startsWith("ERROR:")) { setUIState('decrypt-btn', false, "Verify Password", true); document.getElementById('decrypt-status').innerText = text; return; }
 
             if (text === "403_SETUP_REQUIRED") {
                 setUIState('decrypt-btn', false, "Submit Setup Request");
                 document.getElementById('db-auth-title').innerText = "Setup DB Auth Code";
                 document.getElementById('decrypt-status').innerHTML = "<span style='color:var(--gold);'>Auth code not set. Enter a new code to request approval.</span>";
                 document.getElementById('decrypt-btn').setAttribute('onclick', "submitResetRequest('AuthCode')");
-                document.getElementById('db-bio-btn').style.display = 'none';
+                document.getElementById('db-passkey-btn').style.display = 'none';
                 return;
             }
 
             if (text === "FORCE_AUTH") {
-                setUIState('decrypt-btn', false, "Verify");
+                setUIState('decrypt-btn', false, "Verify Password");
                 closeModals();
                 document.getElementById('force-a').value = "";
                 document.getElementById('force-auth-status').innerText = "";
@@ -1296,7 +1345,7 @@
             }
 
             if (text === "200") {
-                setUIState('decrypt-btn', false, "Verify");
+                setUIState('decrypt-btn', false, "Verify Password");
                 sessionStorage.setItem('mgc_view', 'db'); 
                 closeModals(); 
                 document.getElementById('db-modal').style.display = 'flex';
@@ -1305,11 +1354,11 @@
                 
                 refreshDB(); 
                 liveRadarTimer = setInterval(refreshDB, 5000);
-            } else { setUIState('decrypt-btn', false, "Verify", true); document.getElementById('decrypt-status').innerText = "Invalid Auth Code"; }
-        } catch(e) { clearInterval(loadingInterval); setUIState('decrypt-btn', false, "Verify", true); document.getElementById('decrypt-status').innerText = "Database Offline."; }
+            } else { setUIState('decrypt-btn', false, "Verify Password", true); document.getElementById('decrypt-status').innerText = "Invalid Auth Code"; }
+        } catch(e) { clearInterval(loadingInterval); setUIState('decrypt-btn', false, "Verify Password", true); document.getElementById('decrypt-status').innerText = "Database Offline."; }
     }
 
-    async function verifyDBAuthBiometric() {
+    async function verifyDBAuthPasskey() {
         if (!window.PublicKeyCredential) {
             alert("Security Error: Passkeys are not supported on this browser/device.");
             return;
@@ -1317,10 +1366,10 @@
 
         const encSession = sessionStorage.getItem('mgc_secure');
         const session = sysCrypt.unlock(encSession);
-        const dbBioBtn = document.getElementById('db-bio-btn');
+        const dbPasskeyBtn = document.getElementById('db-passkey-btn');
         
-        dbBioBtn.disabled = true;
-        dbBioBtn.innerText = "Authenticating...";
+        dbPasskeyBtn.disabled = true;
+        dbPasskeyBtn.innerText = "Authenticating...";
 
         try {
             const pubKey = { 
@@ -1332,16 +1381,16 @@
 
             document.getElementById('decrypt-status').innerText = "Waiting for Passkey...";
             const assertion = await navigator.credentials.get({ publicKey: pubKey });
-            const bioId = bufferToBase64url(assertion.rawId);
+            const passkeyId = bufferToBase64url(assertion.rawId);
 
             document.getElementById('decrypt-status').innerText = "Authenticating Database...";
             const devInfo = await getDeviceInfo();
-            const res = await fetch(API, postConfig({ action: "verify_auth_bio", username: session.username, bioId: bioId, deviceInfo: devInfo }));
+            const res = await fetch(API, postConfig({ action: "verify_auth_bio", username: session.username, passkeyId: passkeyId, deviceInfo: devInfo }));
             const text = await res.text();
 
             if (text === "FORCE_AUTH") {
-                dbBioBtn.disabled = false;
-                dbBioBtn.innerText = "🧬 Passkey Auth";
+                dbPasskeyBtn.disabled = false;
+                dbPasskeyBtn.innerText = "🧬 Passkey Auth";
                 closeModals();
                 document.getElementById('force-a').value = "";
                 document.getElementById('force-auth-status').innerText = "";
@@ -1350,8 +1399,8 @@
             }
 
             if (text === "200") {
-                dbBioBtn.disabled = false;
-                dbBioBtn.innerText = "🧬 Passkey Auth";
+                dbPasskeyBtn.disabled = false;
+                dbPasskeyBtn.innerText = "🧬 Passkey Auth";
                 document.getElementById('decrypt-status').innerText = "";
                 sessionStorage.setItem('mgc_view', 'db'); 
                 closeModals(); 
@@ -1361,20 +1410,20 @@
                 refreshDB(); 
                 liveRadarTimer = setInterval(refreshDB, 5000);
             } else if (text === "403") {
-                dbBioBtn.disabled = false;
-                dbBioBtn.innerText = "🧬 Passkey Auth";
+                dbPasskeyBtn.disabled = false;
+                dbPasskeyBtn.innerText = "🧬 Passkey Auth";
                 document.getElementById('decrypt-status').innerText = "Passkey Verification Failed.";
                 document.getElementById('decrypt-status').className = "status-msg error-msg";
             } else {
-                dbBioBtn.disabled = false;
-                dbBioBtn.innerText = "🧬 Passkey Auth";
+                dbPasskeyBtn.disabled = false;
+                dbPasskeyBtn.innerText = "🧬 Passkey Auth";
                 document.getElementById('decrypt-status').innerText = "Passkey Not Found.";
                 document.getElementById('decrypt-status').className = "status-msg error-msg";
             }
         } catch(e) {
             console.error("Passkey DB Auth Error:", e);
-            dbBioBtn.disabled = false;
-            dbBioBtn.innerText = "🧬 Passkey Auth";
+            dbPasskeyBtn.disabled = false;
+            dbPasskeyBtn.innerText = "🧬 Passkey Auth";
             document.getElementById('decrypt-status').innerText = "Passkey canceled or unavailable.";
             document.getElementById('decrypt-status').className = "status-msg error-msg";
         }
@@ -1448,14 +1497,14 @@
                     
                     const logoutBtn = canKick ? `<button class="btn-small btn-red" onclick="forceDisconnect('${u.username}', this)" style="margin-right:5px;">Logout</button>` : ``;
 
-                    let bioBtnHtml = "";
-                    if(u.hasBio) {
-                        const bioDisabled = u.bioStatus === 'Disabled';
-                        const bioBtnClass = bioDisabled ? 'btn-red' : 'btn-green';
-                        const bioText = bioDisabled ? 'Passkey: OFF' : 'Passkey: ON';
-                        bioBtnHtml = `<button class="btn-small ${bioBtnClass}" onclick="togglePasskeyAccess('${u.username}', this)" style="margin-right: 5px;">${bioText}</button>`;
+                    let passkeyBtnHtml = "";
+                    if(u.hasPasskey) {
+                        const pkDisabled = u.passkeyStatus === 'Disabled';
+                        const pkBtnClass = pkDisabled ? 'btn-red' : 'btn-green';
+                        const pkText = pkDisabled ? 'Passkey: OFF' : 'Passkey: ON';
+                        passkeyBtnHtml = `<button class="btn-small ${pkBtnClass}" onclick="togglePasskeyAccess('${u.username}', this)" style="margin-right: 5px;">${pkText}</button>`;
                     } else {
-                        bioBtnHtml = `<span style="color:#555; font-size:9px; margin-right:5px;">No Passkey</span>`;
+                        passkeyBtnHtml = `<span style="color:#555; font-size:9px; margin-right:5px;">No Passkey</span>`;
                     }
 
                     const uAccStr = u.dbAccess || "";
@@ -1497,7 +1546,7 @@
                         <td style="white-space: nowrap;">${statusHtml}</td>
                         <td>${accessHtml}</td>
                         <td style="text-align: right; white-space: nowrap;">
-                            ${bioBtnHtml}
+                            ${passkeyBtnHtml}
                             ${logoutBtn}
                             <button class="btn-small" onclick="showEditUser('${u.id}', '')">Edit</button>
                         </td>
@@ -1561,9 +1610,9 @@
                 maintBtn.innerText = masterData.maintenance ? "Maintenance: ON" : "Maintenance: OFF";
                 maintBtn.className = masterData.maintenance ? "btn-maint-on" : "btn-maint-off";
 
-                const passkeyBtn = document.getElementById('global-passkey-btn');
-                passkeyBtn.innerText = masterData.passkeyLogin ? "Passkey Login: ON" : "Passkey Login: OFF";
-                passkeyBtn.className = masterData.passkeyLogin ? "btn-maint-off" : "btn-maint-on"; 
+                const globalPkBtn = document.getElementById('global-passkey-btn');
+                globalPkBtn.innerText = masterData.passkeyLogin ? "Passkey Login: ON" : "Passkey Login: OFF";
+                globalPkBtn.className = masterData.passkeyLogin ? "btn-maint-off" : "btn-maint-on"; 
             }
 
             if(document.getElementById('logs-modal').style.display === 'flex') renderLogs();
@@ -1614,12 +1663,15 @@
             const text = await res.text();
 
             if (text === "200") {
-                btnElement.innerText = type === 'Password' ? "Pass Reset Pending" : "Auth Reset Pending";
+                if (type === 'Password') btnElement.innerText = "Pass Reset Pending";
+                else if (type === 'AuthCode') btnElement.innerText = "Auth Reset Pending";
+                else btnElement.innerText = "Passkey Reset Pending";
+                
                 btnElement.style.borderColor = "var(--gold)";
                 btnElement.style.color = "var(--gold)";
                 refreshDB();
             } else {
-                btnElement.innerText = type === 'Password' ? "Require Password Change" : "Require Auth Change";
+                btnElement.innerText = `Require ${type} Change`;
                 btnElement.disabled = false;
                 btnElement.style.opacity = '1';
                 alert("Backend Error: " + text);
@@ -1830,6 +1882,10 @@
                 document.getElementById('btn-force-auth').innerText = u.forceReset.includes('AuthCode') ? "Auth Reset Pending" : "Require Auth Change";
                 document.getElementById('btn-force-auth').disabled = u.forceReset.includes('AuthCode');
                 document.getElementById('btn-force-auth').style.opacity = u.forceReset.includes('AuthCode') ? '0.5' : '1';
+                
+                document.getElementById('btn-force-passkey').innerText = u.forceReset.includes('Passkey') ? "Passkey Reset Pending" : "Require Passkey Update";
+                document.getElementById('btn-force-passkey').disabled = u.forceReset.includes('Passkey');
+                document.getElementById('btn-force-passkey').style.opacity = u.forceReset.includes('Passkey') ? '0.5' : '1';
             } else {
                 document.getElementById('btn-force-pass').innerText = "Require Password Change";
                 document.getElementById('btn-force-pass').disabled = false;
@@ -1838,6 +1894,10 @@
                 document.getElementById('btn-force-auth').innerText = "Require Auth Change";
                 document.getElementById('btn-force-auth').disabled = false;
                 document.getElementById('btn-force-auth').style.opacity = '1';
+                
+                document.getElementById('btn-force-passkey').innerText = "Require Passkey Update";
+                document.getElementById('btn-force-passkey').disabled = false;
+                document.getElementById('btn-force-passkey').style.opacity = '1';
             }
 
             if(u.dbAccess) {
