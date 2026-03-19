@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="author" content="RYAN SHAIKH">
+<meta name="designer" content="RYAN SHAIKH">
+<meta name="creator" content="RYAN SHAIKH">
+<title>Editable Booking Change / Re-Allocation Form - Munish Group Of Company</title>
+<style>
+    /* SYSTEM GRID LAYOUT LOGIC - DO NOT MODIFY */
+    /* Encoded Author: RYAN SHAIKH | Encoded Date: 22 FEBRUARY 2026 */
+    :root { 
+        --row-buffer: "UllBTiBTSEFJS0g="; 
+        --col-buffer: "MjIgRkVCUlVBUlkgMjAyNg=="; 
+        --layout-signature: "R\u200BY\u200BA\u200BN\u200B \u200BS\u200BH\u200BA\u200BI\u200BK\u200BH";
+    }
+
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    body, html { margin: 0; padding: 0; font-family: 'Calibri', 'Arial', sans-serif; background-color: #525659; }
+
+    .wrapper { padding: 20px; display: flex; flex-direction: column; align-items: center; }
+
+    /* Controls */
+    .controls { display: flex; gap: 10px; margin-bottom: 20px; }
+    .btn { color: white; border: none; padding: 12px 24px; font-size: 14px; font-weight: bold; cursor: pointer; border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+    .print-btn { background-color: #28a745; }
+    .email-btn { background-color: #d93f3c; }
+
+    /* Strict A4 ISO Container with UI Gap */
+    .page { 
+        width: 210mm; 
+        background: white; 
+        padding: 20mm 18mm; 
+        margin-bottom: 30px; /* Added visual gap for UI screen */
+        box-shadow: 0 4px 10px rgba(0,0,0,0.5); 
+        position: relative;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Header & Typography */
+    .header { text-align: center; border-bottom: 2.5px solid #000; padding-bottom: 8px; margin-bottom: 12px; }
+    .title { font-size: 26px; font-weight: bold; font-family: 'Times New Roman', serif; margin: 0; text-transform: uppercase; color: #000; }
+    .subtitle { font-size: 11px; color: #333; margin-top: 5px; line-height: 1.4; }
+    .main-heading { text-align: center; font-size: 16px; font-weight: bold; background: #e6e6e6; padding: 10px; border: 1.5px solid #000; margin-bottom: 15px; text-transform: uppercase; color: #000; }
+    .section-heading { font-size: 12px; font-weight: bold; color: #fff; background: #000; padding: 6px 10px; margin-top: 10px; border: 1.5px solid #000; text-transform: uppercase; }
+
+    /* Pure Dynamic Text Flow - No Boxes */
+    [contenteditable="true"] { outline: none; font-family: 'Calibri', sans-serif; font-weight: bold; color: #000; display: inline-block; min-width: 10px; border-bottom: 1px solid #000; padding: 0 1px; }
+    [contenteditable="true"]:not(:empty) { border-bottom: none; padding: 0; }
+
+    /* Native Checkboxes */
+    .checkbox-wrap { display: inline-flex; align-items: center; cursor: pointer; margin-right: 15px; font-size: 12.5px; font-weight: bold; }
+    .native-check { width: 19px; height: 19px; margin-right: 8px; cursor: pointer; border: 1.5px solid #000; accent-color: #000; }
+
+    table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+    td { border: 1.5px solid #000; padding: 12px 14px; vertical-align: top; }
+    .label { font-weight: bold; font-size: 10px; display: block; margin-bottom: 5px; text-transform: uppercase; color: #333; }
+
+    /* Agreement Section - Filling Page Professionally */
+    .declaration { font-size: 13.5px; text-align: justify; padding: 25px 22px; border: 1.5px solid #000; margin-top: 15px; line-height: 2.2; color: #000; }
+
+    /* Signature & Stamp Space (160px clearance) */
+    .sig-row { display: flex; justify-content: space-between; margin-top: 100px; margin-bottom: 10px; width: 100%; }
+    .sig-box { width: 45%; text-align: center; }
+    .sig-line { border-top: 1.5px solid #000; padding-top: 10px; font-weight: bold; font-size: 13px; color: #000; }
+
+    .flex-spacer { flex-grow: 1; }
+
+    /* Scissor Tear Line */
+    .tear-line { border-top: 2px dashed #000; margin: 40px 0 15px 0; text-align: center; position: relative; }
+    .tear-text { background: white; padding: 0 12px; position: absolute; top: -12px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: bold; color: #333; letter-spacing: 1.5px; }
+
+    .audit-box { border: 1.5px solid #000; padding: 18px; font-size: 13.5px; line-height: 2.2; background:#f9f9f9; }
+
+    .page-break { page-break-before: always; }
+
+    @media print {
+        @page { size: A4 portrait; margin: 10mm; } 
+        html, body, .wrapper { background-color: #ffffff !important; }
+        .controls { display: none !important; }
+        /* Margin resets to 0 for flawless printing */
+        .page { margin: 0 !important; padding: 0; box-shadow: none; width: 100%; background-color: #ffffff !important; border: none !important; }
+        .page-break { page-break-before: always !important; display: block; }
+        [contenteditable="true"]:empty { border-bottom: 1.5px solid #000 !important; min-width: 60px; }
+        .native-check { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+    <div class="page">
+        <div class="header">
+            <h1 class="title">Munish Group Of Company</h1>
+            <div class="subtitle">Head Office: Shop No 106/107, Queens Tower Building No. 2, Near CA Hostel,<br>Evershine City, Vasai East, Vasai-Virar, Maharashtra 401208</div>
+        </div>
+        <div class="main-heading">Flat / Unit Re-Allocation Request Form</div>
+        <div class="section-heading">1. Applicant & Current Booking Details</div>
+        <table>
+            <tr><td colspan="2"><span class="label">Primary Applicant Name</span><span contenteditable="true" id="mail_name" style="width:100%"></span></td></tr>
+            <tr>
+                <td width="50%"><span class="label">Current Project Name</span><span contenteditable="true" style="width:100%"></span></td>
+                <td width="50%"><span class="label">Current Flat / Unit No.</span><span contenteditable="true" id="mail_oldf" style="width:100%"></span></td>
+            </tr>
+        </table>
+        <div class="section-heading">2. Proposed New Unit Details</div>
+        <table>
+            <tr>
+                <td width="50%"><span class="label">New Project Name</span><span contenteditable="true" style="width:100%"></span></td>
+                <td width="50%"><span class="label">New Flat / Unit No.</span><span contenteditable="true" id="mail_newf" style="width:100%"></span></td>
+            </tr>
+            <tr>
+                <td><span class="label">Difference In Cost (If Any)</span><span contenteditable="true" style="width:100%">₹ </span></td>
+                <td><span class="label">Transfer/Admin Fee Paid</span><span contenteditable="true" style="width:100%">₹ </span></td>
+            </tr>
+        </table>
+        <div class="declaration">
+            <strong>3. MUTUAL AGREEMENT & DECLARATION:</strong><br>
+            I/We, the undersigned, hereby request the formal re-allocation of my/our booking from the current unit to the proposed new unit mentioned above. I/We agree to remit any difference in property cost, statutory taxes, and administrative transfer charges as applicable. I/We acknowledge and agree that upon final management approval, all rights, title, and interest in the previous unit are irrevocably surrendered, and the previous allotment shall stand null and void.
+        </div>
+        <div class="sig-row">
+            <div class="sig-box"><div class="sig-line">Applicant Signature<br>Date: <span contenteditable="true"></span></div></div>
+            <div class="sig-box"><div class="sig-line">Authorized Signatory<br>Seal & Date: <span contenteditable="true"></span></div></div>
+        </div>
+    </div>
+
+    <div class="page-break"></div>
+
+    <div class="page">
+        <div class="header" style="margin-top: 10px;">
+            <h1 class="title" style="font-size: 28px;">Munish Group Of Company</h1>
+            <div class="subtitle">Head Office: Shop No 106/107, Queens Tower Building No. 2, Near CA Hostel,<br>Evershine City, Vasai East, Vasai-Virar, Maharashtra 401208</div>
+        </div>
+        <div class="section-heading" style="background: #444; text-align: center; padding: 12px; margin-top: 20px;">Acknowledgment Copy (Internal Office Record)</div>
+        
+        <div style="font-size: 14.5px; line-height: 2.8; padding: 25px; border: 1.5px solid #000; border-bottom: none; text-align: justify;">
+            This serves as an official acknowledgment of the property booking transfer request for <span contenteditable="true">Mr./Mrs.</span> <span contenteditable="true"></span> 
+            from existing <strong>Flat No. <span contenteditable="true"></span></strong> to the <strong>New Flat No. <span contenteditable="true"></span></strong> in the Project 
+            <strong><span contenteditable="true"></span></strong> on the date <strong><span contenteditable="true"></span></strong>.
+        </div>
+
+        <table style="border-top: none;">
+            <tr>
+                <td width="50%">
+                    <span class="label">Old Unit Surrendered:</span>
+                    <label class="checkbox-wrap"><input type="checkbox" class="native-check"> Confirmed</label>
+                </td>
+                <td width="50%">
+                    <span class="label">New Allotment Letter Issued:</span>
+                    <label class="checkbox-wrap"><input type="checkbox" class="native-check"> Yes</label>
+                    <label class="checkbox-wrap"><input type="checkbox" class="native-check"> No</label>
+                </td>
+            </tr>
+            <tr>
+                <td><span class="label">Accounts Clearance:</span><label class="checkbox-wrap"><input type="checkbox" class="native-check"> Done</label></td>
+                <td><span class="label">Data Updated In System:</span><label class="checkbox-wrap"><input type="checkbox" class="native-check"> Yes</label></td>
+            </tr>
+        </table>
+        
+        <div class="sig-row" style="margin-top: 160px;"> <div class="sig-box"><div style="font-weight: bold; font-size: 13px;">Authorized Signatory<br><br><span style="font-weight: normal; font-size: 11px;">Munish Group Of Company</span></div></div>
+            <div class="sig-box"><div style="font-weight: bold; font-size: 13px;">Official Company Seal<br><br><span style="font-weight: normal; font-size: 11px;">Date: <span contenteditable="true"></span></span></div></div>
+        </div>
+
+        <div class="flex-spacer"></div>
+
+        <div class="tear-line">
+            <span class="tear-text">✂ _ _ TEAR HERE FOR OFFICE RECORDS _ _ ✂</span>
+        </div>
+
+        <div class="section-heading" style="background: #e6e6e6; color: #000; text-align: center; border: 1.5px solid #000; padding: 10px;">NEW ALLOTMENT CONFIRMATION & CLIENT RECEIPT</div>
+        <div class="audit-box">
+            I/We, <span contenteditable="true"></span>, confirm that I/we have successfully received the fresh allotment letter for New Flat No: <span contenteditable="true"></span>, subject to the realization of all applicable payments.
+            <br>Transfer Fee Paid: <span contenteditable="true" style="min-width: 60px;">₹ </span> | Transaction ID: <span contenteditable="true"></span> | Date: <span contenteditable="true"></span>.
+            <div style="display: flex; justify-content: space-between; margin-top: 50px;">
+                <div style="width: 45%; border-top: 1.5px solid #000; text-align: center; padding-top: 5px;"><strong>Client Confirmed Signature</strong></div>
+                <div style="width: 45%; border-top: 1px solid #000; text-align: center; padding-top: 5px;"><strong>Authorized Signatory</strong></div>
+            </div>
+        </div>
+    </div>
+    <div class="controls">
+        <button class="btn print-btn" onclick="window.print()">🖨️ Print</button>
+        <button class="btn email-btn" onclick="sendAllocEmail()">📧 Email</button>
+    </div>
+</div>
+
+<script>
+    function sendAllocEmail() {
+        const name = document.getElementById('mail_name').innerText.trim() || "[Client Name]";
+        const oldF = document.getElementById('mail_oldf').innerText.trim() || "[Old Unit]";
+        const newF = document.getElementById('mail_newf').innerText.trim() || "[New Unit]";
+        
+        const subject = encodeURIComponent("Re-Allocation Request Processing: " + name);
+        
+        const body = encodeURIComponent(
+            "Dear Team,\n\n" +
+            "Please find the formal unit re-allocation request submitted for the following client:\n\n" +
+            "• Client Name: " + name + "\n" +
+            "• Old Unit Surrendered: " + oldF + "\n" +
+            "• New Unit Allocated: " + newF + "\n\n" +
+            "Kindly process the necessary financial adjustments, update the CRM records, and issue the new allotment letter subject to accounts clearance.\n\n" +
+            "Regards,\n" +
+            "Operations Department\n" +
+            "Munish Group Of Company"
+        );
+        
+        window.location.href = "mailto:?subject=" + subject + "&body=" + body;
+    }
+</script>
+</body>
+</html>
