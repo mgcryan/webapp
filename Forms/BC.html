@@ -73,10 +73,51 @@
         /* Margin resets to 0 for flawless printing */
         .page { margin: 0 !important; box-shadow: none; border: none !important; width: 210mm; height: 297mm; padding: 15mm 18mm; }
     }
+
+    .top-nav-controls {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        display: flex;
+        gap: 10px;
+        z-index: 1000;
+    }
+    .nav-btn {
+        background: #333;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        font-size: 12px;
+        font-weight: bold;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: 0.2s;
+        font-family: 'Segoe UI', sans-serif;
+    }
+    .nav-btn:hover { background: #555; }
+    .nav-btn-logout { background: #d93f3c; }
+    .nav-btn-logout:hover { background: #a82e2c; }
+
+    /* HIDES BUTTONS DURING PRINTING */
+    @media print {
+        .top-nav-controls { display: none !important; }
+    }
+    
+    /* MOBILE ADJUSTMENT */
+    @media (max-width: 768px) {
+        .top-nav-controls { top: 10px; right: 10px; }
+        .nav-btn { padding: 6px 10px; font-size: 11px; }
+    }
+    
 </style>
 </head>
 <body>
 <div class="wrapper">
+    <div class="top-nav-controls">
+    <button class="nav-btn" onclick="window.location.href='../index.html'">🔙 Dashboard</button>
+    <button class="nav-btn nav-btn-logout" onclick="sessionStorage.clear(); window.location.href='../index.html'">🚪 Logout</button>
+    </div>
+    
     <button class="print-btn" onclick="window.print()">🖨️ Print</button>
 
     <div class="page">
