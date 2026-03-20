@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script>
-        if (!sessionStorage.getItem('mgc_secure')) {
-            window.location.replace('../index.html'); 
-        }
-    </script>
+<script>
+    if (!sessionStorage.getItem('mgc_secure')) {
+        window.location.href = "../index.html";
+    }
+</script>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Advanced Batch NOC Generator - Munish Group</title>
@@ -39,10 +40,17 @@
     .ui-container { padding: 20px; max-width: 1500px; margin: 0 auto; }
     
     .header-panel { background: var(--surface); padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; border: 1px solid var(--border); position: relative; }
-    .theme-toggle { position: absolute; top: 20px; right: 20px; background: transparent; border: 1px solid var(--border); color: var(--text); padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+    
+    /* TOP RIGHT CONTROLS */
+    .top-controls { position: absolute; top: 20px; right: 20px; display: flex; gap: 8px; z-index: 10; flex-wrap: wrap; justify-content: flex-end; }
+    .theme-toggle { background: transparent; border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+    .nav-btn { background: var(--table-head); color: white; border: none; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: 0.2s; }
+    .nav-btn:hover { opacity: 0.8; }
+    .nav-btn-logout { background: #d93f3c; }
+    .nav-btn-logout:hover { background: #a82e2c; opacity: 1; }
     
     h1 { margin: 0 0 5px 0; font-size: 24px; color: var(--primary); text-transform: uppercase; }
-    p { margin: 0 0 15px 0; font-size: 13px; color: var(--text-muted); }
+    p { margin: 0 0 15px 0; font-size: 13px; color: var(--text-muted); max-width: 70%; }
 
     .section-title { font-size: 13px; font-weight: bold; text-transform: uppercase; color: var(--primary); }
 
@@ -87,8 +95,9 @@
     @media (max-width: 768px) {
         .ui-container { padding: 10px; }
         .header-panel { padding: 15px; }
-        h1 { font-size: 18px; margin-top: 35px; line-height: 1.2; }
-        .theme-toggle { top: 10px; right: 10px; font-size: 11px; padding: 5px 8px; }
+        .top-controls { position: static; justify-content: flex-start; margin-bottom: 15px; }
+        h1 { font-size: 18px; margin-top: 5px; line-height: 1.2; }
+        p { max-width: 100%; }
         .global-settings, .layout-settings { grid-template-columns: 1fr; gap: 12px; padding: 12px; }
         .actions { flex-direction: column; align-items: stretch; }
         .action-left { flex-direction: column; }
@@ -128,7 +137,12 @@
 
 <div class="ui-container" id="ui">
     <div class="header-panel">
-        <button class="theme-toggle" onclick="toggleTheme()">🌓 Toggle Dark Mode</button>
+        <div class="top-controls">
+            <button class="nav-btn" onclick="window.location.href='../index.html'">🔙 Dashboard</button>
+            <button class="nav-btn nav-btn-logout" onclick="sessionStorage.clear(); window.location.href='../index.html'">🚪 Logout</button>
+            <button class="theme-toggle" onclick="toggleTheme()">🌓 Theme</button>
+        </div>
+        
         <h1>Advanced Batch NOC Generator</h1>
         <p>Smart Auto-Extract from Excel/CSV, Multi-Owner Support, and Advanced MS Word Layout Controls.</p>
         
@@ -146,12 +160,13 @@
                 <label>Society Name</label>
                 <select id="g-society" onchange="toggleCustom('g-society', 'g-society-custom')">
                     <option value="">-- Custom / Blank --</option>
-                    <option value="Paramount Height" selected>Paramount Height</option>
+                    <option value="Paramount Height">Paramount Height</option>
                     <option value="Munish Glorious Building 1">Munish Glorious Building 1</option>
                     <option value="Munish Glorious Building 2">Munish Glorious Building 2</option>
                     <option value="Munish Glorious Building 4">Munish Glorious Building 4</option>
                     <option value="Munish Glorious Building 5">Munish Glorious Building 5</option>
                     <option value="Emonics Tower">Emonics Tower</option>
+                    <option value="Emonics Prestige" selected>Emonics Prestige</option>
                 </select>
                 <input type="text" id="g-society-custom" class="custom-input" placeholder="Type Society Name...">
                 
@@ -163,8 +178,9 @@
                 <label>Developer / From Name</label>
                 <select id="g-from" onchange="toggleCustom('g-from', 'g-from-custom')">
                     <option value="">-- Custom / Blank --</option>
-                    <option value="Munish Group Of Company" selected>Munish Group Of Company</option>
+                    <option value="Munish Group Of Company">Munish Group Of Company</option>
                     <option value="Munish Group Of Companies">Munish Group Of Companies</option>
+                    <option value="Emonics Infrastructure" selected>Emonics Infrastructure</option>
                 </select>
                 <input type="text" id="g-from-custom" class="custom-input" placeholder="Type Developer Name...">
             </div>
@@ -319,13 +335,13 @@
             </td>
             <td class="owners-cell">
                 <div class="owner-box">
-                    <input type="text" class="n-name" placeholder="Owner (e.g. Mr. RYAN SHAIKH)">
+                    <input type="text" class="n-name" placeholder="Owner 1 (e.g. Mr. Pramod Singh)">
                     <button class="add-owner-btn" onclick="addOwnerField(this)">+</button>
                 </div>
             </td>
             <td class="wing-col" style="display: ${showWing};"><input type="text" class="n-wing" placeholder="e.g. A"></td>
-            <td><input type="text" class="n-flat" placeholder="e.g. 1204"></td>
-            <td><input type="text" class="n-floor" placeholder="e.g. 12"></td>
+            <td><input type="text" class="n-flat" placeholder="e.g. 406"></td>
+            <td><input type="text" class="n-floor" placeholder="e.g. 4"></td>
             <td><input type="text" class="n-pid" placeholder="Property ID"></td>
             <td><input type="text" class="n-cid" placeholder="Consumer ID"></td>
             <td><button class="btn btn-red" onclick="this.closest('tr').remove()">Remove</button></td>
@@ -338,7 +354,7 @@
         const box = document.createElement('div');
         box.className = 'owner-box';
         box.innerHTML = `
-            <input type="text" class="n-name" placeholder="Co-Owner (e.g. Mrs. SHAIKH)">
+            <input type="text" class="n-name" placeholder="Co-Owner Name">
             <button class="rem-owner-btn" onclick="this.closest('.owner-box').remove()">-</button>
         `;
         cell.appendChild(box);
