@@ -4,118 +4,169 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>mgcryan</title>
-    <link rel="icon" type="image/png" href="Logo.png">
+    <link id="dynamic-favicon" rel="icon" type="image/png" href="Logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        :root { --blue: #0073e6; --dark: #050a14; --red: #ff2a55; --green: #00e676; --grey: #444; --gold: #f4d03f; }
+        :root { --blue: #0073e6; --dark: #050a14; --red: #ff2a55; --green: #00e676; --grey: #444; --gold: #f4d03f; --baby-blue: #89CFF0; }
+        
         body { background: var(--dark); font-family: 'Inter', sans-serif; color: #e0e0e0; margin: 0; overflow: hidden; height: 100vh; display: flex; align-items: center; justify-content: center; }
         
         #matrix-bg { position: fixed; inset: 0; z-index: 1; opacity: 0.15; pointer-events: none; }
         
-        .glass-panel { background: rgba(10, 15, 25, 0.95); border: 1px solid rgba(0,115,230,0.3); padding: 30px; width: 90%; max-width: 360px; border-radius: 8px; box-shadow: 0 0 40px rgba(0,0,0,0.8); box-sizing: border-box; position: relative; }
-        .logo { width: 80px; height: 80px; margin: 0 auto 20px; display: block; border-radius: 50%; box-shadow: 0 0 15px rgba(0,115,230,0.3); }
-        h2 { text-align: center; font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 20px; letter-spacing: 1px; }
-        
-        #inline-maint-warning { display: none; color: var(--red); font-size: 9px; font-weight: bold; margin-top: 4px; position: absolute; text-transform: uppercase; letter-spacing: 0.5px; animation: pulseRed 1.5s infinite; }
-        @keyframes pulseRed { 0% { opacity: 0.5; } 50% { opacity: 1; text-shadow: 0 0 8px var(--red); } 100% { opacity: 0.5; } }
+        .glass-panel { 
+            background: rgba(10, 15, 25, 0.85); 
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 115, 230, 0.3); 
+            padding: 40px; 
+            width: 90%; 
+            max-width: 450px; 
+            max-height: 90vh; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8); 
+            box-sizing: border-box; 
+            position: relative; 
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
 
-        .pass-wrapper { position: relative; width: 100%; margin-bottom: 15px; }
-        .input-group { margin-bottom: 15px; width: 100%; position: relative; }
-        input[type="text"], input[type="password"], select { width: 100%; padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: #fff; font-family: 'JetBrains Mono', monospace; box-sizing: border-box; outline: none; border-radius: 4px; transition: 0.2s; margin-bottom:0; font-size: 12px;}
-        input:focus, select:focus { border-color: var(--blue); background: rgba(0,115,230,0.05); box-shadow: 0 0 10px rgba(0,115,230,0.2); }
-        
-        .cyber-eye { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #444; font-weight: bold; cursor: pointer; transition: 0.3s all; user-select: none; }
+        .settings-hamburger {
+            position: absolute;
+            top: 25px;
+            left: 25px;
+            width: 22px;
+            height: 16px;
+            cursor: pointer;
+            display: none;
+            flex-direction: column;
+            justify-content: space-between;
+            z-index: 10;
+        }
+        .settings-hamburger span {
+            display: block;
+            height: 2px;
+            width: 100%;
+            background: var(--baby-blue);
+            border-radius: 2px;
+            transition: 0.3s;
+        }
+        .settings-hamburger:hover span {
+            background: #fff;
+            box-shadow: 0 0 10px var(--baby-blue);
+        }
+
+        .logo { 
+            width: 80px; 
+            height: 80px; 
+            margin: 0 auto 20px; 
+            display: block; 
+            border-radius: 50%; 
+            box-shadow: 0 0 20px rgba(0, 115, 230, 0.4); 
+            flex-shrink: 0;
+            object-fit: cover;
+            transition: all 0.2s ease; /* Fast smooth transition */
+        }
+
+        h2 { text-align: center; font-size: 18px; font-weight: 600; color: #fff; margin-bottom: 20px; letter-spacing: 1px; flex-shrink: 0; }
+
+        #dynamic-links-container {
+            max-height: 35vh; 
+            overflow-y: auto; 
+            padding-right: 8px; 
+            margin-bottom: 15px;
+        }
+        #dynamic-links-container::-webkit-scrollbar { width: 6px; }
+        #dynamic-links-container::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 4px; }
+        #dynamic-links-container::-webkit-scrollbar-thumb { background: rgba(0, 115, 230, 0.4); border-radius: 4px; }
+        #dynamic-links-container::-webkit-scrollbar-thumb:hover { background: rgba(0, 115, 230, 0.8); }
+
+        #inline-maint-warning { display: none; color: var(--red); font-size: 10px; font-weight: bold; margin-top: 6px; position: absolute; text-transform: uppercase; animation: pulseRed 1.5s infinite; }
+        @keyframes pulseRed { 0% { opacity: 0.5; } 50% { opacity: 1; text-shadow: 0 0 10px var(--red); } 100% { opacity: 0.5; } }
+
+        .pass-wrapper { position: relative; width: 100%; margin-bottom: 12px; flex-shrink: 0;}
+        .input-group { margin-bottom: 12px; width: 100%; position: relative; flex-shrink: 0;}
+
+        input[type="text"], input[type="password"], input[type="url"], select { 
+            width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.15); 
+            color: #fff; font-family: 'JetBrains Mono', monospace; box-sizing: border-box; outline: none; border-radius: 6px; 
+            transition: 0.3s; margin-bottom: 0; font-size: 12px;
+        }
+        input:focus, select:focus { border-color: var(--blue); background: rgba(0, 115, 230, 0.08); box-shadow: 0 0 15px rgba(0, 115, 230, 0.3); }
+
+        .cyber-eye { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #666; font-weight: bold; cursor: pointer; transition: 0.3s; }
         .eye-closed::before { content: "[ - ]"; }
         .eye-open::before { content: "[ O ]"; color: var(--blue); text-shadow: 0 0 10px var(--blue); }
-        
-        button { width: 100%; padding: 12px; background: var(--blue); color: white; border: none; border-radius: 4px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; transition: 0.2s; margin-bottom: 5px; box-sizing: border-box;}
-        button:hover:not(:disabled) { background: #005bb5; box-shadow: 0 0 15px rgba(0,115,230,0.4); }
+
+        button { 
+            width: 100%; padding: 12px; background: var(--blue); color: white; border: none; border-radius: 6px; 
+            cursor: pointer; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.5px;
+            transition: 0.2s; margin-bottom: 8px; box-sizing: border-box; flex-shrink: 0;
+        }
+        button:hover:not(:disabled) { background: #005bb5; box-shadow: 0 0 15px rgba(0, 115, 230, 0.4); }
         button:disabled { opacity: 0.6; cursor: wait; }
-        
-        .status-msg { font-size: 11px; text-align: center; margin-top: 10px; min-height: 14px; color: var(--blue); font-weight: 600; font-family: 'JetBrains Mono';}
+
+        .status-msg { font-size: 11px; text-align: center; margin-top: 8px; min-height: 14px; color: var(--blue); font-weight: 600; font-family: 'JetBrains Mono'; flex-shrink: 0;}
         .error-msg { color: var(--red); }
         .pwd-rules { font-size: 9px; font-family: 'JetBrains Mono'; margin-top: 4px; min-height: 12px; text-align: left; }
 
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;}
-        .modal-content { background: rgba(10, 15, 25, 0.98); border: 1px solid rgba(0,115,230,0.2); padding: 25px; width: 100%; max-width: 1200px; max-height: 90vh; display: flex; flex-direction: column; border-radius: 8px; box-shadow: 0 0 50px rgba(0,0,0,0.9); overflow-y: auto; position: relative; box-sizing: border-box;}
-        
-        .nav-back { color: #aaa; font-size: 12px; cursor: pointer; margin-bottom: 15px; display: inline-block; }
-        .nav-back:hover { color: #fff; text-decoration: underline; }
-        
-        .f-link { display: block; color: var(--blue); text-decoration: none; padding: 12px; margin: 8px 0; border-left: 2px solid var(--blue); background: rgba(0,115,230,0.05); font-size: 12px; text-align: left; transition: 0.2s; font-family: 'JetBrains Mono';}
-        .f-link:hover { background: rgba(0,115,230,0.15); padding-left: 18px; text-shadow: 0 0 8px var(--blue); }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); z-index: 100; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;}
+        .modal-content { background: rgba(10, 15, 25, 0.95); border: 1px solid rgba(0, 115, 230, 0.3); padding: 30px; width: 100%; max-width: 1200px; height: auto; max-height: 90vh; display: flex; flex-direction: column; border-radius: 12px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9); overflow-y: auto; position: relative; box-sizing: border-box;}
 
-        .tab-bar { display: flex; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 15px; flex-wrap: wrap; }
-        .db-tab { padding: 10px 20px; font-size: 11px; color: #888; cursor: pointer; border-bottom: 2px solid transparent; font-weight: bold; text-transform: uppercase; position: relative; flex-grow: 1; text-align: center;}
+        .nav-back { color: #aaa; font-size: 12px; cursor: pointer; margin-bottom: 15px; display: inline-block; font-weight: 600; transition: 0.2s;}
+        .nav-back:hover { color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.5); }
+
+        .f-link { display: block; color: var(--blue); text-decoration: none; padding: 12px; margin: 8px 0; border-left: 3px solid var(--blue); background: rgba(0, 115, 230, 0.05); font-size: 12px; text-align: left; transition: 0.2s; font-family: 'JetBrains Mono'; border-radius: 0 6px 6px 0;}
+        .f-link:hover { background: rgba(0, 115, 230, 0.15); padding-left: 18px; text-shadow: 0 0 10px var(--blue); }
+
+        .tab-bar { display: flex; border-bottom: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 15px; overflow-x: auto; }
+        .db-tab { padding: 10px 15px; font-size: 11px; color: #888; cursor: pointer; border-bottom: 2px solid transparent; font-weight: bold; text-transform: uppercase; flex-grow: 1; text-align: center; white-space: nowrap;}
         .db-tab:hover { color: #fff; }
-        .tab-active { color: var(--blue); border-bottom-color: var(--blue); }
+        .tab-active { color: var(--blue); border-bottom-color: var(--blue); background: rgba(0, 115, 230, 0.05);}
         .tab-content { display: none; flex-direction: column; flex-grow: 1; overflow: hidden; }
         .content-active { display: flex; }
 
         .db-action-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;}
-        .db-action-bar > div { display: flex; gap: 10px; align-items: center; flex-wrap: wrap;}
-        
-        .btn-small { width: auto; padding: 8px 12px; font-size: 10px; background: transparent; border: 1px solid #aaa; color: #aaa; border-radius: 4px; margin:0; transition: 0.2s; cursor: pointer; white-space: nowrap;}
+        .db-action-bar > div { display: flex; gap: 8px; align-items: center; flex-wrap: wrap;}
+
+        .btn-small { width: auto; padding: 8px 14px; font-size: 10px; background: transparent; border: 1px solid #aaa; color: #aaa; border-radius: 6px; margin:0; transition: 0.2s; cursor: pointer; white-space: nowrap;}
         .btn-small:hover:not(:disabled) { background: #333; color: #fff; border-color: #fff; }
         .btn-red { border-color: var(--red); color: var(--red); }
-        .btn-red:hover:not(:disabled) { background: var(--red); color: white; border-color: var(--red); box-shadow: 0 0 10px rgba(255,42,85,0.5); }
+        .btn-red:hover:not(:disabled) { background: rgba(255,42,85,0.1); color: var(--red); box-shadow: 0 0 10px rgba(255, 42, 85, 0.3); }
         .btn-gold { border-color: var(--gold); color: var(--gold); }
-        .btn-gold:hover:not(:disabled) { background: var(--gold); color: black; border-color: var(--gold); }
+        .btn-gold:hover:not(:disabled) { background: rgba(244,208,63,0.1); color: var(--gold); box-shadow: 0 0 10px rgba(244,208,63,0.3); }
         .btn-green { border-color: var(--green); color: var(--green); }
-        .btn-green:hover:not(:disabled) { background: var(--green); color: black; border-color: var(--green); box-shadow: 0 0 10px rgba(0,230,118,0.5); }
-        
-        .btn-maint-off { background: transparent; border: 1px solid var(--grey); color: #888; }
-        .btn-maint-on { background: rgba(255,42,85,0.1); border: 1px solid var(--red); color: var(--red); box-shadow: 0 0 15px rgba(255,42,85,0.2); }
+        .btn-green:hover:not(:disabled) { background: rgba(0,230,118,0.1); color: var(--green); box-shadow: 0 0 10px rgba(0, 230, 118, 0.3); }
 
-        .table-container { flex-grow: 1; overflow-x: auto; overflow-y: auto; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05); border-radius: 4px; -webkit-overflow-scrolling: touch; }
-        .data-table { width: 100%; min-width: 1000px; border-collapse: collapse; font-size: 11px; text-align: left; table-layout: fixed; font-family: 'JetBrains Mono'; }
-        .data-table th { background: rgba(5,10,20,0.95); padding: 12px 10px; color: #888; position: sticky; top: 0; z-index: 2; font-weight: normal; font-size: 10px; text-transform: uppercase; white-space: nowrap;}
-        .data-table td { padding: 12px 10px; border-bottom: 1px solid rgba(255,255,255,0.02); color: #ccc; vertical-align: middle; word-wrap: break-word;}
+        .table-container { flex-grow: 1; overflow-x: auto; overflow-y: auto; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; }
+        .data-table { width: 100%; min-width: 1000px; border-collapse: collapse; font-size: 11px; text-align: left; font-family: 'JetBrains Mono', monospace; }
+        .data-table th { background: rgba(5, 10, 20, 0.98); padding: 12px; color: #aaa; position: sticky; top: 0; z-index: 2; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.1);}
+        .data-table td { padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.03); color: #ccc; }
 
-        .badge-id { color: #555; font-size: 10px; margin-right: 8px;}
-        .status-dot { height: 7px; width: 7px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-        .dot-online { background: var(--green); box-shadow: 0 0 8px var(--green); }
-        .dot-offline { background: #333; }
-        .dot-hidden { background: var(--red); box-shadow: 0 0 8px var(--red); }
+        .badge-id { color: #666; font-size: 11px; margin-right: 8px; background: rgba(255,255,255,0.05); padding: 3px 6px; border-radius: 4px;}
+        .status-dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+        .dot-online { background: var(--green); box-shadow: 0 0 10px var(--green); }
+        .dot-offline { background: #444; }
+        .dot-hidden { background: var(--red); box-shadow: 0 0 10px var(--red); }
 
-        input[type="checkbox"] { width: 14px; height: 14px; cursor: pointer; accent-color: var(--blue); }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 3px; }
+        input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--blue); }
 
         #massive-maint-block, #massive-setup-block { display: none; text-align: center; z-index: 50; }
-        .maint-icon { font-size: 50px; margin-bottom: 10px; text-shadow: 0 0 30px var(--red); }
-        .maint-title { color: var(--red); font-size: 24px; font-weight: 800; text-transform: uppercase; margin: 0 0 10px 0; letter-spacing: 3px; }
-
-        /* Responsive Elite Design - Mobile to TV */
-        @media (min-width: 1440px) {
-            .modal-content { max-width: 1400px; }
-        }
-
-        @media (max-width: 1024px) {
-            .db-action-bar { flex-direction: column; align-items: stretch; gap: 15px;}
-            .db-action-bar > div { justify-content: flex-start; }
-            .data-table { min-width: 1100px; }
-        }
+        .maint-icon { font-size: 60px; margin-bottom: 15px; text-shadow: 0 0 40px var(--red); }
+        .maint-title { color: var(--red); font-size: 28px; font-weight: 800; text-transform: uppercase; margin: 0 0 15px 0; letter-spacing: 4px; }
 
         @media (max-width: 768px) {
-            .glass-panel { padding: 20px; width: 95%; max-width: 400px; }
-            .modal { padding: 10px; }
-            .modal-content { padding: 15px; width: 100%; max-height: 95vh; border-radius: 8px; }
-            .db-action-bar > div { justify-content: space-between; width: 100%; }
-            .btn-small { padding: 10px; font-size: 11px; flex-grow: 1; text-align: center;}
-            .nav-back { font-size: 11px; padding: 5px 0; }
-            .db-tab { font-size: 10px; padding: 10px 5px;}
+            .glass-panel { padding: 30px 20px; max-width: 400px; }
+            .modal-content { padding: 20px; width: 100%; max-height: 95vh; }
+            .db-action-bar { flex-direction: column; align-items: stretch; }
         }
-
         @media (max-width: 480px) {
-            h2 { font-size: 14px; }
-            input[type="text"], input[type="password"], select { font-size: 14px; padding: 10px; }
-            button { font-size: 14px; padding: 10px; }
-            .f-link { font-size: 11px; padding: 10px; }
-            .db-action-bar > span { display: block; text-align: center; margin-bottom: 10px; width: 100%;}
-            .db-action-bar > div { flex-direction: column; }
-            .btn-small { width: 100%; margin-bottom: 5px; }
-            .data-table { min-width: 900px; }
+            .glass-panel { width: 95%; border-radius: 10px;}
+            h2 { font-size: 16px; margin-bottom: 15px; }
+            .logo { width: 70px; height: 70px; margin-bottom: 15px;}
+            input[type="text"], input[type="password"], input[type="url"], select, button { font-size: 13px; padding: 12px; }
+            .btn-small { flex-grow: 1; text-align: center; }
+            .modal .glass-panel { padding: 20px; }
         }
     </style>
 </head>
@@ -123,13 +174,18 @@
     <canvas id="matrix-bg"></canvas>
 
     <div class="glass-panel" id="ui-frame">
+        
+        <div id="user-settings-btn" class="settings-hamburger" onclick="openPersonalSettings()">
+            <span></span><span></span><span></span>
+        </div>
+
         <div id="login-container">
-            <img src="Logo.png" class="logo" alt="Logo">
+            <img src="Logo.png" class="logo" id="main-logo" alt="Logo">
             <h2 id="greet">Welcome to mgcryan</h2>
             
             <div id="auth-zone">
                 <div class="input-group">
-                    <input type="text" id="user" placeholder="Username" class="enter-tab" data-next="pass" onkeyup="checkMaintenancePreflight()">
+                    <input type="text" id="user" placeholder="Username" class="enter-tab" data-next="pass" oninput="checkMaintenancePreflight(); instantAvatarSwap();">
                     <div id="inline-maint-warning">SYSTEM UNDER MAINTENANCE</div>
                 </div>
                 <div class="pass-wrapper" style="margin-bottom:5px;">
@@ -145,16 +201,10 @@
             </div>
 
             <div id="vault-zone" style="display:none; text-align:center;">
-                <div id="dynamic-links-container" style="margin-bottom: 15px;"></div>
+                <div id="dynamic-links-container"></div>
                 
                 <button id="db-btn" onclick="openDBAuth()" style="display:none; background: transparent; border: 1px solid var(--blue); color: var(--blue);">User Management</button>
-                
-                <div style="display:flex; gap:5px; margin-top:5px;">
-                    <button id="vault-passkey-toggle-btn" onclick="toggleMyPasskey(this)" style="display:none; background: transparent; border: 1px solid var(--green); color: var(--green); flex:1;">Passkey: ON</button>
-                    <button id="vault-change-pk-btn" onclick="triggerPasskeySetup()" style="display:none; background: transparent; border: 1px solid var(--gold); color: var(--gold); flex:1;">🔄 Re-register</button>
-                </div>
-                
-                <button onclick="logout()" style="margin-top:10px; background: transparent; border: 1px solid var(--red); color: var(--red);">Logout</button>
+                <button onclick="logout()" style="margin-top:5px; background: transparent; border: 1px solid var(--red); color: var(--red);">Logout</button>
             </div>
         </div>
 
@@ -190,6 +240,27 @@
                 <span class="cyber-eye eye-closed" onclick="togglePass('setup-s', this)"></span>
             </div>
             <button id="setup-btn" onclick="setupGenesis()" style="background:var(--gold); color:black;" disabled>Initialize Database</button>
+        </div>
+    </div>
+
+    <div class="modal" id="personal-settings-modal">
+        <div class="glass-panel" style="width: 100%; max-width: 320px; text-align: center; padding: 25px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="color: #fff; margin: 0; font-size: 16px;">User Settings</h3>
+                <span class="nav-back" onclick="closePersonalSettings()" style="margin: 0;">✖ Close</span>
+            </div>
+            
+            <div style="margin-bottom: 25px;">
+                <label style="font-size: 10px; color: #aaa; text-align: left; display: block; margin-bottom: 5px;">Profile Picture Link</label>
+                <input type="url" id="avatar-url" placeholder="https://..." style="margin-bottom: 10px;">
+                <button onclick="updateAvatar()" style="background: rgba(0, 115, 230, 0.1); border: 1px solid var(--blue); color: var(--blue); font-size: 11px; padding: 10px;">Apply Avatar</button>
+            </div>
+
+            <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+                <label style="font-size: 10px; color: #aaa; text-align: left; display: block; margin-bottom: 10px;">Security</label>
+                <button id="modal-passkey-toggle-btn" onclick="toggleMyPasskey(this)" style="display:none; background: transparent; border: 1px solid var(--green); color: var(--green); font-size: 11px; padding: 10px;">Passkey: ON</button>
+                <button id="modal-change-pk-btn" onclick="triggerPasskeySetup(); closePersonalSettings();" style="display:none; background: transparent; border: 1px solid var(--gold); color: var(--gold); margin-top: 5px; font-size: 11px; padding: 10px;">🔄 Re-register</button>
+            </div>
         </div>
     </div>
 
@@ -506,7 +577,7 @@
             
             <label style="font-size:10px; color:#aaa;">Allowed Access</label>
             <div id="page-access-container" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 10px; max-height: 150px; overflow-y: auto; margin-bottom:15px;">
-                </div>
+            </div>
 
             <label style="font-size:10px; color:#aaa;">Visibility Status</label>
             <div class="input-group">
@@ -528,7 +599,7 @@
     let liveRadarTimer = null; 
     let phantomKillerTimer = null; 
     let masterData = null;
-    let sysData = { maintenance: false, passkeyLogin: true, devs: [], isSetup: false };
+    let sysData = { maintenance: false, passkeyLogin: true, devs: [], isSetup: false, avatars: {} }; // Added avatars dict
     
     let loginFailAttempts = 0;
     let loginLockoutTimer = null;
@@ -549,12 +620,26 @@
         return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
     }
 
-    // ELITE DEVICE INFO ENGINE W/ ABORT TIMEOUT & CLIENT HINTS
+    // --- NEW: 0ms Instant Avatar Swapper ---
+    function instantAvatarSwap() {
+        const u = document.getElementById('user').value.trim().toLowerCase();
+        const logoEl = document.getElementById('main-logo');
+        const favEl = document.getElementById('dynamic-favicon');
+        
+        if (u.length >= 2 && sysData.avatars[u]) {
+            logoEl.src = sysData.avatars[u];
+            favEl.href = sysData.avatars[u];
+        } else {
+            logoEl.src = "Logo.png";
+            favEl.href = "Logo.png";
+        }
+    }
+
     async function getDeviceInfo() {
         let ip = "Unknown IP";
         try { 
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 Second Timeout max
+            const timeoutId = setTimeout(() => controller.abort(), 2000); 
             const res = await fetch('https://api.ipify.org?format=json', { signal: controller.signal }); 
             clearTimeout(timeoutId);
             const data = await res.json(); 
@@ -714,6 +799,7 @@
     window.onload = () => {
         initEnterTabs();
         checkLockout();
+        // Background fetch to load system status AND the Avatar dictionary
         fetch(API + "?mode=status").then(r => r.json()).then(d => {
             if (d.isSetup) {
                 document.getElementById('login-container').style.display = 'none';
@@ -723,6 +809,7 @@
             sysData.maintenance = d.maintenance;
             sysData.passkeyLogin = d.passkeyLogin;
             sysData.devs = d.devs || [];
+            sysData.avatars = d.avatars || {}; // Load the dictionary silently
             checkMaintenancePreflight();
         }).catch(e=>{});
 
@@ -891,7 +978,7 @@
                 document.getElementById('passkey-setup-title').innerText = "Mandatory Security Update";
                 document.getElementById('passkey-setup-desc').innerText = "An Administrator requires you to register a fresh Passkey for this device before proceeding.";
                 document.getElementById('passkey-setup-modal').style.display = 'flex';
-                document.getElementById('passkey-skip-btn').style.display = 'none'; // No skipping allowed!
+                document.getElementById('passkey-skip-btn').style.display = 'none'; 
                 setUIState('login-btn', false, "Login");
             } else if (text.startsWith('{"status":"FORCE_PASS"')) {
                 const d = JSON.parse(text);
@@ -993,6 +1080,32 @@
            setUIState(btnId, false, "Update " + (type === 'Password' ? "Password" : "Auth Code"), true);
            document.getElementById(statId).innerText = "Network Error.";
        }
+    }
+
+    function openPersonalSettings() {
+        document.getElementById('personal-settings-modal').style.display = 'flex';
+    }
+    
+    function closePersonalSettings() {
+        document.getElementById('personal-settings-modal').style.display = 'none';
+    }
+
+    async function updateAvatar() {
+        const url = document.getElementById('avatar-url').value.trim();
+        if(!url) return;
+        
+        document.getElementById('main-logo').src = url;
+        document.getElementById('dynamic-favicon').href = url;
+
+        const encSession = sessionStorage.getItem('mgc_secure');
+        if(encSession) {
+            const session = sysCrypt.unlock(encSession);
+            session.avatar = url;
+            sessionStorage.setItem('mgc_secure', sysCrypt.lock(session));
+            
+            fetch(API, postConfig({ action: "update_avatar", username: session.username, avatarUrl: url }));
+        }
+        alert("Profile visuals updated!");
     }
 
     function triggerPasskeySetup() {
@@ -1149,8 +1262,8 @@
         btnElement.style.pointerEvents = 'auto';
         btnElement.style.opacity = '1';
         
-        const vaultChangePkBtn = document.getElementById('vault-change-pk-btn');
-        if (vaultChangePkBtn) vaultChangePkBtn.style.display = isOff ? "inline-block" : "none";
+        const vaultChangePkBtn = document.getElementById('modal-change-pk-btn');
+        if (vaultChangePkBtn) vaultChangePkBtn.style.display = isOff ? "block" : "none";
     }
 
     async function togglePasskeyAccess(targetUser, btnElement) {
@@ -1200,22 +1313,28 @@
     function initVault(user, links) {
         document.getElementById('auth-zone').style.display = "none";
         document.getElementById('vault-zone').style.display = "block";
+        document.getElementById('user-settings-btn').style.display = "flex";
+        
         document.getElementById('greet').innerText = `Welcome, ${user.name}`;
         
-        const vaultPasskeyToggleBtn = document.getElementById('vault-passkey-toggle-btn');
-        const vaultChangePkBtn = document.getElementById('vault-change-pk-btn');
+        if(user.avatar) {
+            document.getElementById('main-logo').src = user.avatar;
+            document.getElementById('dynamic-favicon').href = user.avatar;
+        }
+
+        const vaultPasskeyToggleBtn = document.getElementById('modal-passkey-toggle-btn');
+        const vaultChangePkBtn = document.getElementById('modal-change-pk-btn');
         
         if (user.hasPasskey) {
-            vaultPasskeyToggleBtn.style.display = "inline-block";
+            vaultPasskeyToggleBtn.style.display = "block";
             vaultPasskeyToggleBtn.innerText = user.passkeyStatus === "Disabled" ? "Passkey: OFF" : "Passkey: ON";
             vaultPasskeyToggleBtn.style.borderColor = user.passkeyStatus === "Disabled" ? "var(--red)" : "var(--green)";
             vaultPasskeyToggleBtn.style.color = user.passkeyStatus === "Disabled" ? "var(--red)" : "var(--green)";
-            
-            vaultChangePkBtn.style.display = user.passkeyStatus === "Disabled" ? "none" : "inline-block";
+            vaultChangePkBtn.style.display = user.passkeyStatus === "Disabled" ? "none" : "block";
             vaultChangePkBtn.innerText = "🔄 Re-register";
         } else {
             vaultPasskeyToggleBtn.style.display = "none";
-            vaultChangePkBtn.style.display = "inline-block";
+            vaultChangePkBtn.style.display = "block";
             vaultChangePkBtn.innerText = "➕ Setup Passkey";
         }
 
@@ -1224,7 +1343,7 @@
         const hasAnyAccess = role.includes('developer') || role.includes('admin') || dbAcc.includes('Users') || dbAcc.includes('Pages') || dbAcc.includes('Security') || dbAcc.includes('Settings') || dbAcc.includes('Approvals');
         
         if(hasAnyAccess) { 
-            document.getElementById('db-btn').style.display = "inline-block"; 
+            document.getElementById('db-btn').style.display = "block"; 
         } else { 
             document.getElementById('db-btn').style.display = "none"; 
         }
@@ -1275,6 +1394,7 @@
     }
 
     async function logout() {
+        document.getElementById('user-settings-btn').style.display = "none";
         const encSession = sessionStorage.getItem('mgc_secure');
         const token = sessionStorage.getItem('mgc_token');
         if (encSession) {
@@ -1284,6 +1404,9 @@
         sessionStorage.clear(); 
         document.getElementById('vault-zone').style.display = "none";
         document.getElementById('auth-zone').style.display = "block";
+        document.getElementById('main-logo').src = "Logo.png";
+        document.getElementById('dynamic-favicon').href = "Logo.png";
+        
         setUIState('login-btn', true, "Erasing digital footprints...");
         setTimeout(() => { window.location.reload(); }, 800); 
     }
