@@ -160,13 +160,12 @@
                 <label>Society Name</label>
                 <select id="g-society" onchange="toggleCustom('g-society', 'g-society-custom')">
                     <option value="">-- Custom / Blank --</option>
-                    <option value="Paramount Height">Paramount Height</option>
+                    <option value="Paramount Height" selected>Paramount Height</option>
                     <option value="Munish Glorious Building 1">Munish Glorious Building 1</option>
                     <option value="Munish Glorious Building 2">Munish Glorious Building 2</option>
                     <option value="Munish Glorious Building 4">Munish Glorious Building 4</option>
                     <option value="Munish Glorious Building 5">Munish Glorious Building 5</option>
                     <option value="Emonics Tower">Emonics Tower</option>
-                    <option value="Emonics Prestige" selected>Emonics Prestige</option>
                 </select>
                 <input type="text" id="g-society-custom" class="custom-input" placeholder="Type Society Name...">
                 
@@ -178,9 +177,8 @@
                 <label>Developer / From Name</label>
                 <select id="g-from" onchange="toggleCustom('g-from', 'g-from-custom')">
                     <option value="">-- Custom / Blank --</option>
-                    <option value="Munish Group Of Company">Munish Group Of Company</option>
+                    <option value="Munish Group Of Company" selected>Munish Group Of Company</option>
                     <option value="Munish Group Of Companies">Munish Group Of Companies</option>
-                    <option value="Emonics Infrastructure" selected>Emonics Infrastructure</option>
                 </select>
                 <input type="text" id="g-from-custom" class="custom-input" placeholder="Type Developer Name...">
             </div>
@@ -335,13 +333,13 @@
             </td>
             <td class="owners-cell">
                 <div class="owner-box">
-                    <input type="text" class="n-name" placeholder="Owner 1 (e.g. Mr. Pramod Singh)">
+                    <input type="text" class="n-name" placeholder="Owner (e.g. Mr. RYAN SHAIKH)">
                     <button class="add-owner-btn" onclick="addOwnerField(this)">+</button>
                 </div>
             </td>
             <td class="wing-col" style="display: ${showWing};"><input type="text" class="n-wing" placeholder="e.g. A"></td>
-            <td><input type="text" class="n-flat" placeholder="e.g. 406"></td>
-            <td><input type="text" class="n-floor" placeholder="e.g. 4"></td>
+            <td><input type="text" class="n-flat" placeholder="e.g. 1204"></td>
+            <td><input type="text" class="n-floor" placeholder="e.g. 12"></td>
             <td><input type="text" class="n-pid" placeholder="Property ID"></td>
             <td><input type="text" class="n-cid" placeholder="Consumer ID"></td>
             <td><button class="btn btn-red" onclick="this.closest('tr').remove()">Remove</button></td>
@@ -354,7 +352,7 @@
         const box = document.createElement('div');
         box.className = 'owner-box';
         box.innerHTML = `
-            <input type="text" class="n-name" placeholder="Co-Owner Name">
+            <input type="text" class="n-name" placeholder="Co-Owner Name (e.g. Mrs. SHAIKH)">
             <button class="rem-owner-btn" onclick="this.closest('.owner-box').remove()">-</button>
         `;
         cell.appendChild(box);
