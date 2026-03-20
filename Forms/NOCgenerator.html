@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        if (!sessionStorage.getItem('mgc_secure')) {
+            window.location.replace('../index.html'); 
+        }
+    </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advanced Batch NOC Generator - Munish Group</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+    /* SYSTEM THEME & UI STYLES */
+    :root { 
+        --primary: #0078D7; 
+        --bg: #f4f7f6; 
+        --surface: #ffffff; 
+        --text: #222222; 
+        --text-muted: #666666;
+        --border: #cccccc; 
+        --table-head: #222222;
+    }
+    
+    [data-theme="dark"] {
+        --bg: #121212; 
+        --surface: #1e1e1e; 
+        --text: #e0e0e0; 
+        --text-muted: #aaaaaa;
+        --border: #444444; 
+        --table-head: #333333;
+        --primary: #3a96dd;
+    }
+
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { margin: 0; background: var(--bg); color: var(--text); transition: background 0.3s, color 0.3s; }
+    
+    .ui-container { padding: 20px; max-width: 1500px; margin: 0 auto; }
+    
+    .header-panel { background: var(--surface); padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; border: 1px solid var(--border); position: relative; }
+    .theme-toggle { position: absolute; top: 20px; right: 20px; background: transparent; border: 1px solid var(--border); color: var(--text); padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+    
+    h1 { margin: 0 0 5px 0; font-size: 24px; color: var(--primary); text-transform: uppercase; }
+    p { margin: 0 0 15px 0; font-size: 13px; color: var(--text-muted); }
+
+    .section-title { font-size: 13px; font-weight: bold; text-transform: uppercase; color: var(--primary); }
+
+    .global-settings { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; padding: 15px; background: rgba(0, 120, 215, 0.05); border-radius: 6px; border: 1px solid rgba(0, 120, 215, 0.2); margin-bottom: 20px; }
+    
+    .layout-settings { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; padding: 15px; background: rgba(40, 167, 69, 0.05); border-radius: 6px; border: 1px solid rgba(40, 167, 69, 0.2); }
+
+    .input-group { display: flex; flex-direction: column; }
+    .input-group label { font-size: 11px; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; color: var(--text); }
+    .input-group input, .input-group select { padding: 9px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; background: var(--surface); color: var(--text); width: 100%; }
+    .custom-input { margin-top: 5px; display: none; }
+
+    .checkbox-wrap { display: flex; align-items: center; gap: 8px; margin-top: 8px; cursor: pointer; font-size: 13px; font-weight: bold; }
+    .checkbox-wrap input { width: 18px; height: 18px; cursor: pointer; }
+
+    .data-grid { background: var(--surface); border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow-x: auto; border: 1px solid var(--border); -webkit-overflow-scrolling: touch; }
+    table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+    th { background: var(--table-head); color: white; padding: 12px; font-size: 11px; text-transform: uppercase; text-align: left; }
+    td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    td input, td select { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; background: var(--bg); color: var(--text); margin-bottom: 5px; }
+    
+    .owner-box { display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
+    .add-owner-btn { background: #28a745; color: white; border: none; border-radius: 4px; width: 26px; height: 26px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .rem-owner-btn { background: #d93f3c; color: white; border: none; border-radius: 4px; width: 26px; height: 26px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+    .btn { padding: 10px 20px; border: none; border-radius: 4px; font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px;}
+    .btn-blue { background: var(--primary); color: white; }
+    .btn-dark { background: var(--table-head); color: white; }
+    .btn-red { background: #d93f3c; color: white; padding: 6px 12px; font-size: 12px; width: 100%; }
+    .btn-green { background: #28a745; color: white; font-size: 16px; padding: 15px 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+
+    .actions { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: var(--surface); margin-top: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid var(--border); flex-wrap: wrap; gap: 15px;}
+    .action-left { display: flex; gap: 10px; flex-wrap: wrap;}
+
+    /* MODAL STYLES */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+    .modal-content { background: var(--surface); padding: 25px; border-radius: 8px; width: 100%; max-width: 650px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid var(--border); }
+    .modal-close { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer; }
+    .modal-close:hover { color: #d93f3c; }
+
+    /* RESPONSIVE UI MOBILE FIXES */
+    @media (max-width: 768px) {
+        .ui-container { padding: 10px; }
+        .header-panel { padding: 15px; }
+        h1 { font-size: 18px; margin-top: 35px; line-height: 1.2; }
+        .theme-toggle { top: 10px; right: 10px; font-size: 11px; padding: 5px 8px; }
+        .global-settings, .layout-settings { grid-template-columns: 1fr; gap: 12px; padding: 12px; }
+        .actions { flex-direction: column; align-items: stretch; }
+        .action-left { flex-direction: column; }
+        .btn { width: 100%; font-size: 14px; padding: 12px; }
+        .btn-green { font-size: 15px; }
+        .modal-content { padding: 15px; }
+    }
+
+    /* PRINT STYLES - STRICT A4 */
+    .print-container { display: none; }
+    
+    @media print {
+        body, html { background: white; margin: 0; padding: 0; color: #000; }
+        .ui-container, .modal-overlay { display: none !important; }
+        .print-container { display: block !important; }
+
+        .noc-page {
+            /* Width, height and padding are set dynamically via JS to emulate MS Word Layouts */
+            box-sizing: border-box;
+            page-break-after: always;
+            position: relative;
+            background: white;
+            color: #000;
+        }
+
+        .noc-body { text-align: justify; margin-bottom: 30px; }
+        .noc-body p { margin: 0 0 12px 0; }
+
+        /* Dynamic Blank Line Fallback */
+        .blank-fill { display: inline-block; min-width: 200px; border-bottom: 1.5px solid #000; height: 1em; vertical-align: bottom; }
+        .blank-short { min-width: 60px; }
+    }
+</style>
+<style id="dynamic-print-style"></style>
+</head>
+<body>
+
+<div class="ui-container" id="ui">
+    <div class="header-panel">
+        <button class="theme-toggle" onclick="toggleTheme()">🌓 Toggle Dark Mode</button>
+        <h1>Advanced Batch NOC Generator</h1>
+        <p>Smart Auto-Extract from Excel/CSV, Multi-Owner Support, and Advanced MS Word Layout Controls.</p>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 2px solid var(--border); padding-bottom: 5px;">
+            <div class="section-title" style="border: none; padding: 0; margin: 0;">Document Details</div>
+            <button class="btn btn-dark" style="padding: 6px 12px; font-size: 12px;" onclick="openLayoutModal()">⚙️ Page Setup</button>
+        </div>
+        
+        <div class="global-settings">
+            <div class="input-group">
+                <label>Issue Date</label>
+                <input type="text" id="g-date">
+            </div>
+            <div class="input-group">
+                <label>Society Name</label>
+                <select id="g-society" onchange="toggleCustom('g-society', 'g-society-custom')">
+                    <option value="">-- Custom / Blank --</option>
+                    <option value="Paramount Height" selected>Paramount Height</option>
+                    <option value="Munish Glorious Building 1">Munish Glorious Building 1</option>
+                    <option value="Munish Glorious Building 2">Munish Glorious Building 2</option>
+                    <option value="Munish Glorious Building 4">Munish Glorious Building 4</option>
+                    <option value="Munish Glorious Building 5">Munish Glorious Building 5</option>
+                    <option value="Emonics Tower">Emonics Tower</option>
+                </select>
+                <input type="text" id="g-society-custom" class="custom-input" placeholder="Type Society Name...">
+                
+                <label class="checkbox-wrap" style="margin-top: 10px;">
+                    <input type="checkbox" id="g-has-wing" onchange="toggleWingColumn()"> Enable Wings (A, B, C)
+                </label>
+            </div>
+            <div class="input-group">
+                <label>Developer / From Name</label>
+                <select id="g-from" onchange="toggleCustom('g-from', 'g-from-custom')">
+                    <option value="">-- Custom / Blank --</option>
+                    <option value="Munish Group Of Company" selected>Munish Group Of Company</option>
+                    <option value="Munish Group Of Companies">Munish Group Of Companies</option>
+                </select>
+                <input type="text" id="g-from-custom" class="custom-input" placeholder="Type Developer Name...">
+            </div>
+        </div>
+    </div>
+
+    <div class="data-grid">
+        <table id="noc-table">
+            <thead>
+                <tr>
+                    <th style="width: 14%;">NOC Type</th>
+                    <th style="width: 25%;">Owner Name(s)</th>
+                    <th style="width: 8%; display:none;" class="wing-col">Wing</th>
+                    <th style="width: 10%;">Flat/Shop No.</th>
+                    <th style="width: 9%;">Floor</th>
+                    <th style="width: 14%;">Property No.</th>
+                    <th style="width: 14%;">Consumer No.</th>
+                    <th style="width: 6%;">Action</th>
+                </tr>
+            </thead>
+            <tbody id="tbody">
+                </tbody>
+        </table>
+    </div>
+
+    <div class="actions">
+        <div class="action-left">
+            <button class="btn btn-blue" onclick="addRow()">+ Add New Flat</button>
+            <input type="file" id="file-upload" accept=".xlsx, .xls, .csv" style="display:none;" onchange="handleFileUpload(event)">
+            <button class="btn btn-dark" onclick="document.getElementById('file-upload').click()">📁 Smart Import Excel/CSV</button>
+        </div>
+        <button class="btn btn-green" onclick="generateAndPrint()">🖨️ Compile & Print NOCs</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="layout-modal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeLayoutModal()">✖</button>
+        <div class="section-title" style="margin-bottom: 15px;">Page Setup & Layout (Like MS Word)</div>
+        <div class="layout-settings">
+            <div class="input-group">
+                <label>Print Font Style</label>
+                <select id="g-font">
+                    <option value="'Times New Roman', Times, serif" selected>Times New Roman</option>
+                    <option value="'Arial', sans-serif">Arial</option>
+                    <option value="'Calibri', sans-serif">Calibri</option>
+                    <option value="'Garamond', serif">Garamond</option>
+                    <option value="'Georgia', serif">Georgia</option>
+                    <option value="'Verdana', sans-serif">Verdana</option>
+                    <option value="'Tahoma', sans-serif">Tahoma</option>
+                    <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+                    <option value="'Helvetica', sans-serif">Helvetica</option>
+                    <option value="'Palatino Linotype', 'Book Antiqua', Palatino, serif">Palatino Linotype</option>
+                    <option value="'Courier New', Courier, monospace">Courier New</option>
+                    <option value="'Century Gothic', sans-serif">Century Gothic</option>
+                    <option value="'Cambria', serif">Cambria</option>
+                    <option value="'Didot', serif">Didot</option>
+                    <option value="'Bookman Old Style', serif">Bookman Old Style</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Orientation</label>
+                <select id="p-orient">
+                    <option value="portrait" selected>Portrait</option>
+                    <option value="landscape">Landscape</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Top Margin (cm)</label>
+                <input type="number" step="0.1" id="p-top" value="5.5" title="Leaves room for letterhead">
+            </div>
+            <div class="input-group">
+                <label>Bot Margin (cm)</label>
+                <input type="number" step="0.01" id="p-bot" value="2.54">
+            </div>
+            <div class="input-group">
+                <label>Left Margin (cm)</label>
+                <input type="number" step="0.01" id="p-left" value="2.54">
+            </div>
+            <div class="input-group">
+                <label>Right Margin (cm)</label>
+                <input type="number" step="0.01" id="p-right" value="2.54">
+            </div>
+            <div class="input-group">
+                <label>Font Size (pt)</label>
+                <input type="number" step="0.5" id="p-size" value="12">
+            </div>
+            <div class="input-group">
+                <label>Line Spacing</label>
+                <select id="p-spacing">
+                    <option value="1.15">1.15</option>
+                    <option value="1.5" selected>1.5 Lines</option>
+                    <option value="2.0">Double (2.0)</option>
+                </select>
+            </div>
+        </div>
+        <div style="margin-top: 20px; text-align: right;">
+            <button class="btn btn-blue" onclick="closeLayoutModal()">Apply Settings</button>
+        </div>
+    </div>
+</div>
+
+<div class="print-container" id="print-area"></div>
+
+<script>
+    // Initialize Theme
+    function toggleTheme() {
+        const root = document.documentElement;
+        const current = root.getAttribute('data-theme');
+        root.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) toggleTheme();
+
+    // Modal Controls
+    function openLayoutModal() { document.getElementById('layout-modal').style.display = 'flex'; }
+    function closeLayoutModal() { document.getElementById('layout-modal').style.display = 'none'; }
+
+    // Set today's date automatically in word format (12-March-2026)
+    const today = new Date();
+    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    document.getElementById('g-date').value = `${String(today.getDate()).padStart(2, '0')}-${months[today.getMonth()]}-${today.getFullYear()}`;
+
+    // Handle Custom Inputs
+    function toggleCustom(selectId, inputId) {
+        const select = document.getElementById(selectId);
+        const input = document.getElementById(inputId);
+        if (select.value === "") { input.style.display = "block"; input.focus(); } 
+        else { input.style.display = "none"; }
+    }
+
+    // Toggle Wing Column
+    function toggleWingColumn() {
+        const isChecked = document.getElementById('g-has-wing').checked;
+        document.querySelectorAll('.wing-col').forEach(el => el.style.display = isChecked ? 'table-cell' : 'none');
+    }
+
+    // Add Row
+    window.onload = () => addRow();
+
+    function addRow() {
+        const tbody = document.getElementById('tbody');
+        const tr = document.createElement('tr');
+        const showWing = document.getElementById('g-has-wing').checked ? 'table-cell' : 'none';
+        
+        tr.innerHTML = `
+            <td>
+                <select class="n-type" onchange="toggleIDFields(this)">
+                    <option value="BOTH">Both (Prop + MSEB)</option>
+                    <option value="PROP">Property Tax Only</option>
+                    <option value="MSEB">MSEB Electricity Only</option>
+                </select>
+            </td>
+            <td class="owners-cell">
+                <div class="owner-box">
+                    <input type="text" class="n-name" placeholder="Owner (e.g. Mr. RYAN SHAIKH)">
+                    <button class="add-owner-btn" onclick="addOwnerField(this)">+</button>
+                </div>
+            </td>
+            <td class="wing-col" style="display: ${showWing};"><input type="text" class="n-wing" placeholder="e.g. A"></td>
+            <td><input type="text" class="n-flat" placeholder="e.g. 1204"></td>
+            <td><input type="text" class="n-floor" placeholder="e.g. 12"></td>
+            <td><input type="text" class="n-pid" placeholder="Property ID"></td>
+            <td><input type="text" class="n-cid" placeholder="Consumer ID"></td>
+            <td><button class="btn btn-red" onclick="this.closest('tr').remove()">Remove</button></td>
+        `;
+        tbody.appendChild(tr);
+    }
+
+    function addOwnerField(btn) {
+        const cell = btn.closest('.owners-cell');
+        const box = document.createElement('div');
+        box.className = 'owner-box';
+        box.innerHTML = `
+            <input type="text" class="n-name" placeholder="Co-Owner (e.g. Mrs. SHAIKH)">
+            <button class="rem-owner-btn" onclick="this.closest('.owner-box').remove()">-</button>
+        `;
+        cell.appendChild(box);
+    }
+
+    function toggleIDFields(select) {
+        const tr = select.closest('tr');
+        const pInput = tr.querySelector('.n-pid');
+        const cInput = tr.querySelector('.n-cid');
+        
+        if (select.value === "PROP") { pInput.style.opacity = "1"; cInput.style.opacity = "0.3"; cInput.value = ""; }
+        else if (select.value === "MSEB") { cInput.style.opacity = "1"; pInput.style.opacity = "0.3"; pInput.value = ""; }
+        else { pInput.style.opacity = "1"; cInput.style.opacity = "1"; }
+    }
+
+    // Smart Excel Parsing Engine
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheet = workbook.SheetNames[0];
+                const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], {defval: ""});
+                
+                if(jsonData.length > 0) populateFromExcel(jsonData);
+            } catch (err) {
+                alert("Error reading file. Please ensure it is a valid Excel or CSV format.");
+            }
+            event.target.value = ""; 
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function populateFromExcel(data) {
+        const tbody = document.getElementById('tbody');
+        
+        if (tbody.children.length === 1) {
+            const firstRow = tbody.children[0];
+            const nameInp = firstRow.querySelector('.n-name').value;
+            const flatInp = firstRow.querySelector('.n-flat').value;
+            if(!nameInp && !flatInp) tbody.innerHTML = '';
+        }
+
+        const hasWing = document.getElementById('g-has-wing');
+        let enableWings = hasWing.checked;
+
+        data.forEach(row => {
+            const getSmartVal = (regex) => {
+                let match = Object.keys(row).find(k => regex.test(k));
+                return match ? String(row[match]).trim() : "";
+            };
+
+            const typeVal  = getSmartVal(/\b(type|noc|form|doc)\b/i);
+            const rawOwners= getSmartVal(/\b(owner|name|client|customer|buyer|purchaser)\b/i);
+            const wingVal  = getSmartVal(/\b(wing|block|tower|bldg)\b/i);
+            const flatVal  = getSmartVal(/\b(flat|shop|unit|room|gala|office)\b/i);
+            const floorVal = getSmartVal(/\b(floor|level|flr)\b/i);
+            const pidVal   = getSmartVal(/\b(prop|pid|tax|assess|index)\b/i);
+            const cidVal   = getSmartVal(/\b(cons|cid|mseb|elec|meter|bill)\b/i);
+
+            let finalType = "BOTH";
+            if(typeVal.toUpperCase().includes('PROP')) finalType = "PROP";
+            if(typeVal.toUpperCase().includes('MSEB') || typeVal.toUpperCase().includes('ELEC')) finalType = "MSEB";
+
+            if (wingVal !== "") enableWings = true;
+
+            let ownersArr = rawOwners.split(/,|&| and /i).map(s => s.trim()).filter(s => s);
+            if(ownersArr.length === 0) ownersArr = [""];
+
+            let ownerBoxesHTML = "";
+            ownersArr.forEach((o, idx) => {
+                if (idx === 0) {
+                    ownerBoxesHTML += `
+                        <div class="owner-box">
+                            <input type="text" class="n-name" placeholder="Owner 1" value="${o}">
+                            <button class="add-owner-btn" onclick="addOwnerField(this)">+</button>
+                        </div>`;
+                } else {
+                    ownerBoxesHTML += `
+                        <div class="owner-box">
+                            <input type="text" class="n-name" placeholder="Co-Owner Name" value="${o}">
+                            <button class="rem-owner-btn" onclick="this.closest('.owner-box').remove()">-</button>
+                        </div>`;
+                }
+            });
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>
+                    <select class="n-type" onchange="toggleIDFields(this)">
+                        <option value="BOTH" ${finalType==='BOTH'?'selected':''}>Both (Prop + MSEB)</option>
+                        <option value="PROP" ${finalType==='PROP'?'selected':''}>Property Tax Only</option>
+                        <option value="MSEB" ${finalType==='MSEB'?'selected':''}>MSEB Electricity Only</option>
+                    </select>
+                </td>
+                <td class="owners-cell">${ownerBoxesHTML}</td>
+                <td class="wing-col"><input type="text" class="n-wing" placeholder="e.g. A" value="${wingVal}"></td>
+                <td><input type="text" class="n-flat" placeholder="e.g. 406" value="${flatVal}"></td>
+                <td><input type="text" class="n-floor" placeholder="e.g. 4" value="${floorVal}"></td>
+                <td><input type="text" class="n-pid" placeholder="Property ID" value="${pidVal}"></td>
+                <td><input type="text" class="n-cid" placeholder="Consumer ID" value="${cidVal}"></td>
+                <td><button class="btn btn-red" onclick="this.closest('tr').remove()">Remove</button></td>
+            `;
+            tbody.appendChild(tr);
+            toggleIDFields(tr.querySelector('.n-type'));
+        });
+
+        if (enableWings) {
+            hasWing.checked = true;
+            toggleWingColumn();
+        }
+    }
+
+    // Auto-Ordinal Logic (1 -> 1st, 2 -> 2nd)
+    function getOrdinalFloor(numStr) {
+        let n = parseInt(numStr.replace(/\D/g, ''));
+        if (isNaN(n)) return numStr !== "" ? `<strong>${numStr}</strong>` : `<span class="blank-fill blank-short"></span>`;
+        let s = ["th", "st", "nd", "rd"];
+        let v = n % 100;
+        let suffix = s[(v - 20) % 10] || s[v] || s[0];
+        return `<strong>${n}<sup>${suffix}</sup></strong>`;
+    }
+
+    const v = (val, isShort = false) => {
+        const trimmed = val.trim();
+        if (trimmed !== "") return `<strong>${trimmed}</strong>`;
+        return isShort ? `<span class="blank-fill blank-short"></span>` : `<span class="blank-fill"></span>`;
+    };
+
+    function generateAndPrint() {
+        const printArea = document.getElementById('print-area');
+        printArea.innerHTML = ''; 
+
+        // Layout Configs
+        const gFont = document.getElementById('g-font').value;
+        const orient = document.getElementById('p-orient').value;
+        const pTop = document.getElementById('p-top').value || 5.5;
+        const pBot = document.getElementById('p-bot').value || 2.54;
+        const pLeft = document.getElementById('p-left').value || 2.54;
+        const pRight = document.getElementById('p-right').value || 2.54;
+        const pSize = document.getElementById('p-size').value || 12;
+        const pSpacing = document.getElementById('p-spacing').value || 1.5;
+
+        // Set dimensions based on orientation
+        const width = orient === 'landscape' ? '297mm' : '210mm';
+        const height = orient === 'landscape' ? '210mm' : '297mm';
+
+        // Inject dynamic @page CSS rule for orientation
+        document.getElementById('dynamic-print-style').innerHTML = `@media print { @page { size: A4 ${orient}; margin: 0; } }`;
+
+        // Global Configurations
+        const gDate = v(document.getElementById('g-date').value);
+        
+        let socSelect = document.getElementById('g-society').value;
+        const gSociety = v(socSelect === "" ? document.getElementById('g-society-custom').value : socSelect);
+        
+        let fromSelect = document.getElementById('g-from').value;
+        const rawFrom = fromSelect === "" ? document.getElementById('g-from-custom').value.trim() : fromSelect;
+        const gFrom = v(rawFrom);
+        const signFrom = rawFrom !== "" ? rawFrom : "Authorized Signatory";
+
+        const hasWing = document.getElementById('g-has-wing').checked;
+
+        const rows = document.querySelectorAll('#tbody tr');
+        if(rows.length === 0) return alert("Please add at least one row.");
+
+        let htmlPayload = "";
+
+        rows.forEach(row => {
+            const type = row.querySelector('.n-type').value;
+            
+            // Extract & Format Owners
+            const ownerInputs = Array.from(row.querySelectorAll('.n-name')).map(inp => inp.value.trim()).filter(val => val !== "");
+            let ownerText = "";
+            let grammarIsAre = "is";
+            let grammarOwner = "owner";
+            let grammarHisHer = "his/her";
+            let grammarName = "name";
+            
+            if (ownerInputs.length === 0) {
+                ownerText = `<span class="blank-fill"></span>`;
+            } else if (ownerInputs.length === 1) {
+                ownerText = `<strong>${ownerInputs[0]}</strong>`;
+            } else {
+                grammarIsAre = "are";
+                grammarOwner = "owners";
+                grammarHisHer = "their";
+                grammarName = "names";
+                let last = ownerInputs.pop();
+                ownerText = `<strong>${ownerInputs.join("</strong> & <strong>")}</strong> & <strong>${last}</strong>`;
+            }
+
+            const flatNum = row.querySelector('.n-flat').value.trim();
+            const wingNum = hasWing ? row.querySelector('.n-wing').value.trim() : "";
+            
+            let flatRender = flatNum !== "" ? `<strong>${flatNum}</strong>` : `<span class="blank-fill blank-short"></span>`;
+            let wingRender = (hasWing && wingNum !== "") ? ` in <strong>${wingNum} - Wing</strong>` : "";
+
+            const floor = getOrdinalFloor(row.querySelector('.n-floor').value);
+            const pId = v(row.querySelector('.n-pid').value);
+            const cId = v(row.querySelector('.n-cid').value);
+
+            // Base Style applied per page based on layout settings
+            const pageStyle = `width: ${width}; height: ${height}; font-family: ${gFont}; font-size: ${pSize}pt; line-height: ${pSpacing}; padding: ${pTop}cm ${pRight}cm ${pBot}cm ${pLeft}cm;`;
+
+            // PROPERTY TAX NOC TEMPLATE
+            const propTaxHTML = `
+            <div class="noc-page" style="${pageStyle}">
+                <div style="margin-bottom: 1.5em; text-align: right;">Date : <strong>${gDate}</strong></div>
+                
+                <div style="margin-bottom: 1.5em; line-height: 1.4;">
+                    To,<br>
+                    The Municipal Corporation,<br>
+                    Vasai-Virar City
+                </div>
+                
+                <div style="margin-bottom: 1.5em; font-weight: bold; text-decoration: underline;">
+                    Subject : Request to change name in the property tax bill.
+                </div>
+                
+                <div style="margin-bottom: 1em; font-weight: bold;">
+                    Respected Sir/Madam,
+                </div>
+                
+                <div class="noc-body">
+                    <p>We would like to inform you that ${ownerText} ${grammarIsAre} the ${grammarOwner} of Flat/Shop No. ${flatRender} on the ${floor} Floor${wingRender} of our Society named ${gSociety}.</p>
+                    
+                    <p>We are writing this letter to request a change of name in the property tax bill.</p>
+                    
+                    <p>The name to be replaced is ${ownerText} from ${gFrom}.</p>
+                    
+                    <p>We do not have any objection to changing ${grammarHisHer} ${grammarName} on the Property Tax records. The Property number is : ${pId}.</p>
+                    
+                    <p>We kindly request you to do the needful.</p>
+                </div>
+                
+                <div style="margin-top: 2.5em;">
+                    <div>Thanking You,</div>
+                    <div style="margin-top: 2em; font-weight: bold;">For ${gFrom}</div>
+                    <br><br><br><br>
+                    <div style="font-weight: bold;">Authorized Signatory</div>
+                </div>
+            </div>`;
+
+            // MSEB NOC TEMPLATE
+            const msebHTML = `
+            <div class="noc-page" style="${pageStyle}">
+                <div style="margin-bottom: 1.5em; text-align: right;">Date : <strong>${gDate}</strong></div>
+                
+                <div style="margin-bottom: 1.5em; line-height: 1.4;">
+                    To,<br>
+                    M.S.E.D.C.L,<br>
+                    Vasai Road (East) - 401208
+                </div>
+                
+                <div style="margin-bottom: 1.5em; font-weight: bold; text-decoration: underline;">
+                    Subject : No Objection Certificate for change of name.
+                </div>
+                
+                <div style="margin-bottom: 1em; font-weight: bold;">
+                    Respected Sir/Madam,
+                </div>
+                
+                <div class="noc-body">
+                    <p>We would like to inform you that ${ownerText} ${grammarIsAre} the ${grammarOwner} of Flat/Shop No. ${flatRender} on the ${floor} Floor${wingRender} of our Society named ${gSociety}.</p>
+                    
+                    <p>We are writing this letter to request a change of name in the Electricity bill.</p>
+                    
+                    <p>The name to be replaced is ${ownerText} from ${gFrom}.</p>
+                    
+                    <p>We do not have any objection to changing ${grammarHisHer} ${grammarName} on the Electricity bill. The Consumer number is : ${cId}.</p>
+                    
+                    <p>We kindly request you to do the needful.</p>
+                </div>
+                
+                <div style="margin-top: 2.5em;">
+                    <div>Thanking You,</div>
+                    <div style="margin-top: 2em; font-weight: bold;">For ${gFrom}</div>
+                    <br><br><br><br>
+                    <div style="font-weight: bold;">Authorized Signatory</div>
+                </div>
+            </div>`;
+
+            if (type === "PROP" || type === "BOTH") htmlPayload += propTaxHTML;
+            if (type === "MSEB" || type === "BOTH") htmlPayload += msebHTML;
+        });
+
+        printArea.innerHTML = htmlPayload;
+        
+        // Render delay
+        setTimeout(() => { window.print(); }, 250);
+    }
+</script>
+</body>
+</html>
