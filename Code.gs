@@ -1,5 +1,6 @@
 /**
- * mgcryan - SERVER LOGIC
+ * mgcryan - SERVER LOGIC (Level Infinite Edition)
+ * Includes Dynamic Avatar / Favicon Support
  */
 
 function sha256(str) {
@@ -20,17 +21,18 @@ function setupSheet(ss, name, headers) {
 
 function ensureUserColumns(sheet) {
   if (sheet.getLastRow() === 0) {
-    sheet.appendRow(["ID", "Username", "Password", "Role", "Name", "Auth", "Status", "PasskeyID", "PasskeyStatus", "DB_Access", "ForceReset"]);
+    sheet.appendRow(["ID", "Username", "Password", "Role", "Name", "Auth", "Status", "PasskeyID", "PasskeyStatus", "DB_Access", "ForceReset", "Avatar"]);
     return;
   }
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   if (String(headers[0]).trim().toUpperCase() !== "ID") sheet.insertColumnBefore(1);
   
-  // Non-destructive column renaming from Biometric to Passkey
-  if (sheet.getLastColumn() < 8 || headers[7] !== "PasskeyID") { sheet.getRange(1, 8).setValue("PasskeyID"); }
-  if (sheet.getLastColumn() < 9 || headers[8] !== "PasskeyStatus") { sheet.getRange(1, 9).setValue("PasskeyStatus"); }
-  if (sheet.getLastColumn() < 10 || headers[9] !== "DB_Access") { sheet.getRange(1, 10).setValue("DB_Access"); }
-  if (sheet.getLastColumn() < 11 || headers[10] !== "ForceReset") { sheet.getRange(1, 11).setValue("ForceReset"); }
+  // Non-destructive column expansion
+  if (sheet.getLastColumn() < 8 || headers[7] !== "PasskeyID") sheet.getRange(1, 8).setValue("PasskeyID");
+  if (sheet.getLastColumn() < 9 || headers[8] !== "PasskeyStatus") sheet.getRange(1, 9).setValue("PasskeyStatus");
+  if (sheet.getLastColumn() < 10 || headers[9] !== "DB_Access") sheet.getRange(1, 10).setValue("DB_Access");
+  if (sheet.getLastColumn() < 11 || headers[10] !== "ForceReset") sheet.getRange(1, 11).setValue("ForceReset");
+  if (sheet.getLastColumn() < 12 || headers[11] !== "Avatar") sheet.getRange(1, 12).setValue("Avatar");
 }
 
 function getNextId(sheet, prefix) {
@@ -79,7 +81,6 @@ function doPost(e) {
     ensureUserColumns(userSheet);
     
     const logSheet = setupSheet(ss, "Logs", ["Date", "Time", "Operator_ID", "Operator_Username", "Operator_Name", "Target", "Action", "IP_Address", "OS", "Architecture", "Device_Type", "Model", "Browser", "CPU"]);
-    
     if (logSheet.getLastRow() > 0) {
       const logHeaders = logSheet.getRange(1, 1, 1, logSheet.getLastColumn()).getValues()[0];
       if (logHeaders[3] !== "Operator_Username") {
@@ -102,10 +103,36 @@ function doPost(e) {
     const dateStr = "'" + Utilities.formatDate(d, "GMT+5:30", "yyyy-MM-dd");
     const timeStr = "'" + Utilities.formatDate(d, "GMT+5:30", "HH:mm:ss");
 
+    // --- NEW AVATAR ENDPOINTS ---
+    
+    if (data.action === "get_avatar") {
+      const rows = userSheet.getDataRange().getValues();
+      for (let i = 1; i < rows.length; i++) {
+        if (String(rows[i][1]).trim().toLowerCase() === String(data.username).trim().toLowerCase()) {
+          return ContentService.createTextOutput(rows[i][11] || ""); // Column 12 (Index 11) is Avatar
+        }
+      }
+      return ContentService.createTextOutput("");
+    }
+
+    if (data.action === "update_avatar") {
+      const rows = userSheet.getDataRange().getValues();
+      for (let i = 1; i < rows.length; i++) {
+        if (String(rows[i][1]).trim() === String(data.username).trim()) {
+          userSheet.getRange(i + 1, 12).setValue(data.avatarUrl);
+          logSheet.appendRow([dateStr, timeStr, "SYSTEM", data.username, "User", data.username, "Updated Profile Visuals"]);
+          return ContentService.createTextOutput("200");
+        }
+      }
+      return ContentService.createTextOutput("404");
+    }
+
+    // ----------------------------
+
     if (data.action === "setup_system") {
       if (userSheet.getLastRow() > 1) return ContentService.createTextOutput("403");
       const newId = data.devId ? data.devId.trim() : "MGC-0001";
-      userSheet.appendRow([newId, data.username, sha256(data.password), "Developer", data.name, sha256(data.auth), "Offline", "", "Enabled", "Users,Pages,Security,Settings,Approvals", ""]);
+      userSheet.appendRow([newId, data.username, sha256(data.password), "Developer", data.name, sha256(data.auth), "Offline", "", "Enabled", "Users,Pages,Security,Settings,Approvals", "", ""]);
       if(secSheet.getLastRow() === 0) secSheet.appendRow(["Encrypted_Security_Keys"]);
       secSheet.appendRow([sha256(data.securityKey)]);
       logSheet.appendRow([dateStr, timeStr, newId, data.username, data.name, "System", "Initialized Root Developer Account"]);
@@ -294,7 +321,6 @@ function doPost(e) {
           
           const devInfo = data.deviceInfo || {};
           logSheet.appendRow([dateStr, timeStr, userId, matchedUsername, rows[i][4], "Web App", "Logged into Web App via Passkey", devInfo.ip || "-", devInfo.os || "-", devInfo.architecture || "-", devInfo.device || "-", devInfo.model || "-", devInfo.browser || "-", devInfo.cpu || "-"]);
-          
           let allowedPages = [];
           if (pageSheet.getLastRow() > 1) {
             const pages = pageSheet.getDataRange().getValues().slice(1);
@@ -307,7 +333,7 @@ function doPost(e) {
 
           return ContentService.createTextOutput(JSON.stringify({
             status: "200", token: sessionToken,
-            user: { id: userId, username: matchedUsername, role: rows[i][3], name: rows[i][4], dbAccess: rows[i][9] || '', hasPasskey: true, passkeyStatus: passkeyStatus },
+            user: { id: userId, username: matchedUsername, role: rows[i][3], name: rows[i][4], dbAccess: rows[i][9] || '', avatar: rows[i][11] || '', hasPasskey: true, passkeyStatus: passkeyStatus },
             links: allowedPages,
             hasPasskey: true,
             passkeyStatus: passkeyStatus
@@ -351,7 +377,6 @@ function doPost(e) {
             
             const devInfo = data.deviceInfo || {};
             logSheet.appendRow([dateStr, timeStr, userId, matchedUsername, rows[i][4], "Web App", "Logged into Web App", devInfo.ip || "-", devInfo.os || "-", devInfo.architecture || "-", devInfo.device || "-", devInfo.model || "-", devInfo.browser || "-", devInfo.cpu || "-"]);
-            
             let allowedPages = [];
             if (pageSheet.getLastRow() > 1) {
               const pages = pageSheet.getDataRange().getValues().slice(1);
@@ -364,7 +389,7 @@ function doPost(e) {
 
             return ContentService.createTextOutput(JSON.stringify({
               status: "200", token: sessionToken,
-              user: { id: userId, username: matchedUsername, role: rows[i][3], name: rows[i][4], dbAccess: rows[i][9] || '', hasPasskey: hasPasskey, passkeyStatus: passkeyStatus },
+              user: { id: userId, username: matchedUsername, role: rows[i][3], name: rows[i][4], dbAccess: rows[i][9] || '', avatar: rows[i][11] || '', hasPasskey: hasPasskey, passkeyStatus: passkeyStatus },
               links: allowedPages,
               hasPasskey: hasPasskey,
               passkeyStatus: passkeyStatus
@@ -545,7 +570,7 @@ function doPost(e) {
             newId = getNextId(userSheet, "MGC");
         }
 
-        userSheet.appendRow([newId, data.username, sha256(data.password), data.role, data.name, sha256(data.auth), "Offline", "", "Enabled", data.dbAccess || "", ""]);
+        userSheet.appendRow([newId, data.username, sha256(data.password), data.role, data.name, sha256(data.auth), "Offline", "", "Enabled", data.dbAccess || "", "", ""]);
         logSheet.appendRow([dateStr, timeStr, data.operatorId, data.operatorUsername || "-", data.operatorName, data.username, `${data.operatorName} added new user ${data.username} (${newId})`]);
         return ContentService.createTextOutput("200");
       }
@@ -647,7 +672,7 @@ function doGet(e) {
     const users = userSheet.getDataRange().getValues().slice(1).map(r => {
       const isOnline = activeUsernames.includes(String(r[1]).trim());
       const hasPasskeyData = String(r[7]).trim() !== "";
-      return { id: r[0], username: r[1], role: r[3], name: r[4], status: isOnline ? 'Online' : 'Offline', passkeyStatus: r[8] || 'Enabled', dbAccess: r[9] || '', forceReset: r[10] || '', hasPasskey: hasPasskeyData };
+      return { id: r[0], username: r[1], role: r[3], name: r[4], status: isOnline ? 'Online' : 'Offline', passkeyStatus: r[8] || 'Enabled', dbAccess: r[9] || '', forceReset: r[10] || '', avatar: r[11] || '', hasPasskey: hasPasskeyData };
     });
     
     let approvals = [];
@@ -658,9 +683,7 @@ function doGet(e) {
     }
 
     const logs = logSheet && logSheet.getLastRow() > 1 ? logSheet.getDataRange().getValues().slice(1).reverse() : [];
-    
     const pages = pageSheet && pageSheet.getLastRow() > 1 ? pageSheet.getDataRange().getValues().slice(1).map(r => ({ id: r[0], title: r[1], url: r[2], allowed: r[3], status: r[4] || 'Visible' })) : [];
-    
     let activeUsers = users.filter(u => u.status === 'Online');
     const keyCount = secSheet ? Math.max(0, secSheet.getLastRow() - 1) : 0;
     
