@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>
+        if (!sessionStorage.getItem('mgc_secure')) {
+            window.location.replace('../index.html'); 
+        }
+    </script>
 <meta charset="UTF-8">
 <meta name="author" content="RYAN SHAIKH">
 <title>Booking Change / Re-Allocation Form - Munish Group Of Company</title>
