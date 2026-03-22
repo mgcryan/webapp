@@ -7,6 +7,40 @@
     }
 </script>
 
+<script>
+    (function() {
+        let inactivityTimer;
+        
+        // Set your timeout limit here (currently set to 15 minutes)
+        // Math: 5 minutes * 60 seconds * 1000 milliseconds
+        const TIMEOUT_LIMIT = 5 * 60 * 1000; 
+
+        function triggerAutoLogout() {
+            // Destroy the secure session data
+            sessionStorage.clear(); 
+            
+            // Alert the user and kick them out
+            alert("Session expired due to inactivity. For your security, you have been logged out.");
+            window.location.href = "../index.html"; 
+        }
+
+        function resetTimer() {
+            clearTimeout(inactivityTimer);
+            inactivityTimer = setTimeout(triggerAutoLogout, TIMEOUT_LIMIT);
+        }
+
+        // Listeners for Desktop (Windows/Mac) and Mobile (Touch/Scroll)
+        const activityEvents = ['mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
+        
+        activityEvents.forEach(eventName => {
+            document.addEventListener(eventName, resetTimer, { passive: true });
+        });
+
+        // Start the timer as soon as the page loads
+        resetTimer();
+    })();
+</script>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Advanced Batch NOC Generator - Munish Group</title>
@@ -115,7 +149,6 @@
         .print-container { display: block !important; }
 
         .noc-page {
-            /* Width, height and padding are set dynamically via JS to emulate MS Word Layouts */
             box-sizing: border-box;
             page-break-after: always;
             position: relative;
@@ -549,11 +582,33 @@
                 ownerText = `<strong>${ownerInputs.join("</strong> & <strong>")}</strong> & <strong>${last}</strong>`;
             }
 
-            const flatNum = row.querySelector('.n-flat').value.trim();
+            // Flat vs Shop dynamic phrasing logic
+            const flatNumRaw = row.querySelector('.n-flat').value.trim();
             const wingNum = hasWing ? row.querySelector('.n-wing').value.trim() : "";
             
-            let flatRender = flatNum !== "" ? `<strong>${flatNum}</strong>` : `<span class="blank-fill blank-short"></span>`;
-            let wingRender = (hasWing && wingNum !== "") ? ` in <strong>${wingNum} - Wing</strong>` : "";
+            let unitPrefix = "Flat No.";
+            let cleanFlatNum = flatNumRaw;
+            
+            if (/shop/i.test(flatNumRaw)) {
+                unitPrefix = "Shop No.";
+                cleanFlatNum = flatNumRaw.replace(/shop\s*(no\.?|number)?\s*[:-]?\s*/i, '').trim();
+            } else if (/office/i.test(flatNumRaw)) {
+                unitPrefix = "Office No.";
+                cleanFlatNum = flatNumRaw.replace(/office\s*(no\.?|number)?\s*[:-]?\s*/i, '').trim();
+            } else if (/gala/i.test(flatNumRaw)) {
+                unitPrefix = "Gala No.";
+                cleanFlatNum = flatNumRaw.replace(/gala\s*(no\.?|number)?\s*[:-]?\s*/i, '').trim();
+            }
+
+            let flatRender = "";
+            if (cleanFlatNum === "" && wingNum === "") {
+                flatRender = `<span class="blank-fill blank-short"></span>`;
+            } else {
+                let fStr = cleanFlatNum;
+                if (hasWing && wingNum !== "" && cleanFlatNum !== "") fStr = `${wingNum}-${cleanFlatNum}`;
+                else if (hasWing && wingNum !== "") fStr = `${wingNum}-`; 
+                flatRender = `<strong>${fStr}</strong>`;
+            }
 
             const floor = getOrdinalFloor(row.querySelector('.n-floor').value);
             const pId = v(row.querySelector('.n-pid').value);
@@ -582,7 +637,7 @@
                 </div>
                 
                 <div class="noc-body">
-                    <p>We would like to inform you that ${ownerText} ${grammarIsAre} the ${grammarOwner} of Flat/Shop No. ${flatRender} on the ${floor} Floor${wingRender} of our Society named ${gSociety}.</p>
+                    <p>We would like to inform you that ${ownerText} ${grammarIsAre} the ${grammarOwner} of ${unitPrefix} ${flatRender} on the ${floor} Floor of our Society named ${gSociety}.</p>
                     
                     <p>We are writing this letter to request a change of name in the property tax bill.</p>
                     
@@ -621,7 +676,7 @@
                 </div>
                 
                 <div class="noc-body">
-                    <p>We would like to inform you that ${ownerText} ${grammarIsAre} the ${grammarOwner} of Flat/Shop No. ${flatRender} on the ${floor} Floor${wingRender} of our Society named ${gSociety}.</p>
+                    <p>We would like to inform you that ${ownerText} ${grammarIsAre} the ${grammarOwner} of ${unitPrefix} ${flatRender} on the ${floor} Floor of our Society named ${gSociety}.</p>
                     
                     <p>We are writing this letter to request a change of name in the Electricity bill.</p>
                     
